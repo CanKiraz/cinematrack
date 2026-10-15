@@ -29,6 +29,7 @@
     <string name="login_network">Ağ hatası. Bağlantını kontrol et</string>
     <string name="login_generic_error">Bir şeyler ters gitti. Tekrar dene</string>
     <string name="login_session_expired">Lütfen tekrar giriş yap</string>
+    <string name="login_recent_login">Güvenlik için lütfen eski kullanıcı adınla tekrar giriş yap, sonra e-postanı bir kez daha gir.</string>
     <string name="login_create_account">Hesap oluştur</string>
     <string name="login_back_to_sign_in">Girişe dön</string>
     <string name="login_forgot">Şifreni mi unuttun?</string>

@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.auth.FirebaseUser;
@@ -274,8 +275,19 @@ public class LoginActivity extends AppCompatActivity {
         // The address changes only once the person opens the link we send to it
         user.verifyBeforeUpdateEmail(email).addOnCompleteListener(task -> {
             busy(false);
-            if (task.isSuccessful()) { sentTo = email; setMode(Mode.UPGRADE_SENT); }
-            else showError(describe(task.getException()));
+            Exception e = task.getException();
+            if (task.isSuccessful()) {
+                sentTo = email;
+                setMode(Mode.UPGRADE_SENT);
+            } else if (e instanceof FirebaseAuthRecentLoginRequiredException) {
+                // Changing the email needs a recent sign-in. Sign out and back in (with the old username) fixes it:
+                // do the first half for them and say what is next.
+                auth.signOut();
+                setMode(Mode.LOGIN);
+                showInfo(getString(R.string.login_recent_login));
+            } else {
+                showError(describe(e));
+            }
         });
     }
 
@@ -317,7 +329,9 @@ public class LoginActivity extends AppCompatActivity {
             String code = ((FirebaseAuthException) e).getErrorCode();
             return getString("ERROR_INVALID_EMAIL".equals(code) ? R.string.login_invalid_email : R.string.login_wrong);
         }
-        return getString(R.string.login_generic_error);
+        // Unknown problem: show its code, so it can be reported and fixed
+        String code = e instanceof FirebaseAuthException ? ((FirebaseAuthException) e).getErrorCode() : null;
+        return getString(R.string.login_generic_error) + (code != null ? " (" + code + ")" : "");
     }
 
     private static String text(EditText et) { return et.getText().toString().trim(); }

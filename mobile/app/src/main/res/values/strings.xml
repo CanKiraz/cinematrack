@@ -29,6 +29,7 @@
     <string name="login_network">Network error. Check your connection</string>
     <string name="login_generic_error">Something went wrong. Try again</string>
     <string name="login_session_expired">Please sign in again</string>
+    <string name="login_recent_login">For security, please sign in again with your old username, then enter your email once more.</string>
     <string name="login_create_account">Create account</string>
     <string name="login_back_to_sign_in">Back to sign in</string>
     <string name="login_forgot">Forgot password?</string>
