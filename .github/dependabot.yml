@@ -1,9 +1,14 @@
 version: 2
 updates:
+  # Major versions of these need a manual migration and a test on a real device (Electron + electron-vite + Vite move together,
+  # the Android libraries need a newer SDK, the Firebase test tools are pinned to each other), so they are done on purpose.
   - package-ecosystem: npm
     directory: /desktop
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /worker
     schedule: { interval: weekly }
@@ -12,10 +17,16 @@ updates:
     directory: /firebase
     schedule: { interval: weekly }
     open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: gradle
     directory: /mobile
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
