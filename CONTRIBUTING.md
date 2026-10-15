@@ -36,7 +36,7 @@ Pick the part you want to change and run its checks (the same ones CI runs).
 ```bash
 cd desktop
 npm install
-npm run dev                                   # opens the app
+npm run dev                                   # opens the app (the first run downloads Electron, about 100 MB)
 npx tsc --noEmit -p tsconfig.web.json         # typecheck the UI
 npx tsc --noEmit -p tsconfig.node.json        # typecheck the main process
 ```
