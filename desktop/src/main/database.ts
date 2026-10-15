@@ -1,11 +1,67 @@
-import Database from 'better-sqlite3'
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { app } from 'electron'
 import path from 'path'
 
 const userDataPath = app.getPath('userData')
 const dbPath = path.join(userDataPath, 'cinematrack.db')
 
-let db: Database.Database
+/**
+ * SQLite comes with Electron's Node (node:sqlite), so there is no native module to compile, ship or keep patched.
+ * This is the small part of the better-sqlite3 style API the rest of this file uses.
+ */
+class Db {
+  private readonly raw: DatabaseSync
+
+  constructor(file: string) {
+    this.raw = new DatabaseSync(file)
+  }
+
+  exec(sql: string): void {
+    this.raw.exec(sql)
+  }
+
+  pragma(setting: string): void {
+    this.raw.exec(`PRAGMA ${setting}`)
+  }
+
+  prepare(sql: string) {
+    const statement = this.raw.prepare(sql)
+    // Named parameters (@name) are passed as an object. Give node:sqlite only the keys the SQL uses: it refuses extra ones.
+    const bind = (args: unknown[]): SQLInputValue[] => {
+      const first = args[0]
+      if (args.length === 1 && first && typeof first === 'object') {
+        const wanted = new Set([...sql.matchAll(/@(\w+)/g)].map(m => m[1]))
+        return [Object.fromEntries(Object.entries(first).filter(([key]) => wanted.has(key)))] as SQLInputValue[]
+      }
+      return args as SQLInputValue[]
+    }
+    return {
+      get: (...args: unknown[]): unknown => statement.get(...bind(args)),
+      all: (...args: unknown[]): unknown[] => statement.all(...bind(args)),
+      run: (...args: unknown[]) => {
+        const result = statement.run(...bind(args))
+        return { changes: Number(result.changes), lastInsertRowid: Number(result.lastInsertRowid) }
+      }
+    }
+  }
+
+  /** Returns a function that runs `fn` in a transaction (rolled back if it throws). */
+  transaction<T>(fn: () => T): () => T {
+    return () => {
+      this.raw.exec('BEGIN')
+      try {
+        const value = fn()
+        this.raw.exec('COMMIT')
+        return value
+      } catch (error) {
+        this.raw.exec('ROLLBACK')
+        throw error
+      }
+    }
+  }
+}
+
+let db: Db
 
 // CinemaTrack = movies, DiziTrack = TV series. Same shape, separate tables
 // (a movie and a series can share the same TMDB id, so they must not share a table).
@@ -65,7 +121,7 @@ function ensureColumn(table: string, column: string, type: string): void {
 }
 
 export function initDatabase(): void {
-  db = new Database(dbPath)
+  db = new Db(dbPath)
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
 
