@@ -1,6 +1,6 @@
 {
   "name": "cinematrack",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Your personal movie watchlist & statistics tracker",
   "main": "out/main/index.js",
   "scripts": {
