@@ -45,7 +45,7 @@
     <string name="login_upgrade_title">Upgrade your account</string>
     <string name="login_upgrade_body">CinemaTrack now uses real email addresses, so you can reset a forgotten password. Enter yours and we will send a confirmation link. Your lists stay exactly as they are.</string>
     <string name="login_upgrade_send">Send confirmation link</string>
-    <string name="login_upgrade_sent">We sent a confirmation link to %s. Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are.</string>
+    <string name="login_upgrade_sent">We sent a confirmation link to %s. Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are. If nothing arrives, an account with this email may already exist: sign out and sign in with it.</string>
     <string name="login_try_another">Did not arrive? Try an email address again</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>

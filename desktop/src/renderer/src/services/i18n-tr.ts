@@ -242,7 +242,7 @@ export const TR: Record<string, string> = {
   'CinemaTrack now uses real email addresses, so you can reset a forgotten password. Enter yours and we will send a confirmation link. Your lists stay exactly as they are.': 'CinemaTrack artık gerçek e-posta adresleri kullanıyor, böylece unuttuğun şifreyi sıfırlayabilirsin. Adresini gir, bir onay bağlantısı gönderelim. Listelerin olduğu gibi kalır.',
   'Send confirmation link': 'Onay bağlantısı gönder',
   'We sent a confirmation link to {0}.': '{0} adresine bir onay bağlantısı gönderdik.',
-  'Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are.': 'Bağlantıyı aç (istenmeyen klasörüne de bak), sonra o e-posta ile tekrar giriş yap. Listelerin olduğu gibi kalır.',
+  'Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are. If nothing arrives, an account with this email may already exist: sign out and sign in with it.': 'Bağlantıyı aç (istenmeyen klasörüne de bak), sonra o e-posta ile tekrar giriş yap. Listelerin olduğu gibi kalır. Hiçbir şey gelmezse bu e-postayla zaten bir hesap açılmış olabilir: çıkış yapıp o hesapla giriş yap.',
   'Did not arrive? Try an email address again': 'Gelmedi mi? E-posta adresini tekrar dene',
   '👋 Welcome to CinemaTrack': '👋 CinemaTrack\'e hoş geldin',
   'Enter your free API keys to get started. Both take about 2 minutes to set up.': 'Başlamak için ücretsiz API anahtarlarını gir. İkisi de yaklaşık 2 dakikada alınır.',
