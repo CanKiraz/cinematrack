@@ -6,13 +6,19 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "postinstall": "electron-rebuild -f -w better-sqlite3",
     "package": "electron-vite build && electron-builder"
   },
   "build": {
     "appId": "com.cinematrack.app",
     "productName": "CinemaTrack",
-    "files": ["out/**/*", "resources/**/*"],
+    "npmRebuild": false,
+    "files": [
+      "out/**/*",
+      "resources/**/*",
+      "!node_modules/better-sqlite3/deps/**",
+      "!node_modules/better-sqlite3/src/**",
+      "!node_modules/better-sqlite3/prebuilds/{darwin-arm64,darwin-x64,linux-arm64,linux-x64,linuxmusl-arm64,linuxmusl-x64,win32-arm64}.node"
+    ],
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico"
@@ -26,25 +32,24 @@
     }
   },
   "dependencies": {
-    "better-sqlite3": "^11.1.2"
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.6.0",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.1",
-    "electron": "^31.2.0",
-    "electron-builder": "^24.13.3",
-    "electron-vite": "^2.3.0",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
     "firebase": "^10.12.0",
     "postcss": "^8.5.29",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
-    "vite": "^5.3.4"
+    "vite": "^8.3.4"
   }
 }
