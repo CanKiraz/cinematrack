@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CinemaTrack" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_blue</item>
+        <item name="colorPrimaryVariant">@color/accent_blue_dark</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorSecondary">@color/accent_blue_light</item>
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_surface</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="bottomNavigationStyle">@style/BottomNavStyle</item>
+        <item name="materialButtonStyle">@style/AppButtonStyle</item>
+        <item name="ctAccent">@color/accent_blue</item>
+        <item name="ctAccentLight">@color/accent_blue_light</item>
+        <item name="ctAccentDark">@color/accent_blue_dark</item>
+        <item name="ctAccentSoft">@color/accent_blue_soft</item>
+    </style>
+
+    <!-- DiziTrack (series): same app, purple accent -->
+    <style name="Theme.CinemaTrack.Dizi" parent="Theme.CinemaTrack">
+        <item name="colorPrimary">@color/accent_dizi</item>
+        <item name="colorPrimaryVariant">@color/accent_dizi_dark</item>
+        <item name="colorSecondary">@color/accent_dizi_light</item>
+        <item name="ctAccent">@color/accent_dizi</item>
+        <item name="ctAccentLight">@color/accent_dizi_light</item>
+        <item name="ctAccentDark">@color/accent_dizi_dark</item>
+        <item name="ctAccentSoft">@color/accent_dizi_soft</item>
+    </style>
+
+    <style name="AppButtonStyle" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@null</item>
+        <item name="backgroundTint">@null</item>
+    </style>
+
+    <style name="BottomSheetTheme" parent="Theme.MaterialComponents.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="ctAccent">@color/accent_blue</item>
+        <item name="ctAccentLight">@color/accent_blue_light</item>
+        <item name="ctAccentDark">@color/accent_blue_dark</item>
+        <item name="ctAccentSoft">@color/accent_blue_soft</item>
+    </style>
+
+    <style name="BottomSheetTheme.Dizi">
+        <item name="ctAccent">@color/accent_dizi</item>
+        <item name="ctAccentLight">@color/accent_dizi_light</item>
+        <item name="ctAccentDark">@color/accent_dizi_dark</item>
+        <item name="ctAccentSoft">@color/accent_dizi_soft</item>
+    </style>
+
+    <style name="CustomBottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/bottom_sheet_bg</item>
+    </style>
+
+    <style name="Theme.CinemaTrack.Dialog" parent="Theme.MaterialComponents.DayNight.BottomSheetDialog">
+        <item name="colorPrimary">@color/accent_blue</item>
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="android:windowBackground">@color/transparent</item>
+        <item name="bottomSheetStyle">@style/BottomSheetStyle</item>
+        <item name="ctAccent">@color/accent_blue</item>
+        <item name="ctAccentLight">@color/accent_blue_light</item>
+        <item name="ctAccentDark">@color/accent_blue_dark</item>
+        <item name="ctAccentSoft">@color/accent_blue_soft</item>
+    </style>
+
+    <style name="BottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/bottom_sheet_bg</item>
+    </style>
+
+    <style name="BottomNavStyle" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="android:background">@color/bg_surface</item>
+        <item name="itemIconTint">@color/nav_icon_color</item>
+        <item name="itemTextColor">@color/nav_icon_color</item>
+        <item name="itemRippleColor">?attr/ctAccent</item>
+    </style>
+
+    <style name="CardStyle">
+        <item name="android:background">@drawable/card_bg</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:padding">12dp</item>
+    </style>
+
+    <style name="SectionTitle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+</resources>

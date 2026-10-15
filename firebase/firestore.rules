@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// CinemaTrack Firestore rules. The desktop and Android apps share this one database.
+//
+// Principles
+//  - Everything requires a signed-in user whose e-mail address is VERIFIED (blocks throw-away signups).
+//  - A user's lists and notes (watchlists/{uid}/...) are readable and writable by that user ONLY.
+//  - Watch Together never reads another user's lists. Each member publishes a short-lived summary
+//    (sessions/{id}/payload/{uid}) that only the two session members can read.
+//  - Anything not listed here is denied.
+//
+// Deploy:  cd firebase && npm run deploy:rules   (or paste into Firebase console -> Firestore -> Rules)
+// Test:    cd firebase && npm test               (needs Java; runs against the local emulator)
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isOwner(uid) {
+      return verified() && request.auth.uid == uid;
+    }
+    function isMember(session) {
+      return request.auth.uid == session.creatorId || request.auth.uid == session.partnerId;
+    }
+
+    // ── Personal lists ──────────────────────────────────────────────────────────
+    // movies / watchlog = CinemaTrack, shows / showlog = DiziTrack, meta = sync bookkeeping
+    match /watchlists/{uid}/{collection}/{docId} {
+      allow read, write: if isOwner(uid)
+                         && collection in ['movies', 'shows', 'watchlog', 'showlog', 'meta'];
+    }
+
+    // ── Watch Together ──────────────────────────────────────────────────────────
+    // The document id is the 6-character join code.
+    match /sessions/{sid} {
+
+      // joining needs to read the session by its code
+      allow get: if verified();
+      // no browsing: you can only list sessions you are a member of
+      allow list: if verified() && isMember(resource.data);
+
+      allow create: if verified()
+                    && sid.matches('^[A-Z0-9]{6}$')
+                    && request.resource.data.creatorId == request.auth.uid
+                    && request.resource.data.partnerId == null;
+
+      allow update: if verified()
+                    && request.resource.data.creatorId == resource.data.creatorId
+                    && (
+                      // members can update, but the partner seat cannot be reassigned
+                      (isMember(resource.data)
+                        && request.resource.data.partnerId == resource.data.partnerId)
+                      ||
+                      // a stranger can only take the free partner seat, for themselves, and touch nothing else
+                      (resource.data.partnerId == null
+                        && request.resource.data.partnerId == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['partnerId', 'partnerUsername', 'status']))
+                    );
+
+      allow delete: if verified() && isMember(resource.data);
+
+      // Each member's short-lived summary (titles, genres, ratings: never notes).
+      // Expires via a Firestore TTL policy on `expireAt` (see docs) and is deleted when the session ends.
+      match /payload/{uid} {
+        function inSession() {
+          return isMember(get(/databases/$(database)/documents/sessions/$(sid)).data);
+        }
+        function validPayload() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['uid', 'kind', 'watchlist', 'watched', 'expireAt', 'createdAt'])
+              && d.uid == request.auth.uid
+              && d.watchlist is list && d.watchlist.size() <= 300
+              && d.watched is list && d.watched.size() <= 150;
+        }
+
+        allow read: if verified() && inSession();
+        allow create, update: if isOwner(uid) && inSession() && validPayload();
+        // the owner can always delete theirs (even after the session document is gone);
+        // either member can clean up both when the session ends
+        allow delete: if isOwner(uid) || (verified() && inSession());
+      }
+    }
+  }
+}

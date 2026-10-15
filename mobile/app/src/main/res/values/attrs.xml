@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Accent colours: blue for CinemaTrack (movies), purple for DiziTrack (series) -->
+    <attr name="ctAccent" format="color"/>
+    <attr name="ctAccentLight" format="color"/>
+    <attr name="ctAccentDark" format="color"/>
+    <attr name="ctAccentSoft" format="color"/>
+</resources>

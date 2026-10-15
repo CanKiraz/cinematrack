@@ -1,0 +1,4 @@
+# Copy to .dev.vars (git-ignored) for `npm run dev`. Use your own keys.
+TMDB_KEY=
+GEMINI_KEY=
+RAPID_KEY=

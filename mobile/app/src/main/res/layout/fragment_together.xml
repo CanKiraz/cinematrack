@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg_primary">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@color/bg_surface"
+            android:padding="20dp" android:layout_marginBottom="16dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/together_title" android:textSize="22sp" android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:id="@+id/tvTogetherSubtitle" android:text="@string/together_subtitle"
+                android:textSize="13sp" android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <ProgressBar android:id="@+id/progressBar"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" android:visibility="gone"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Menu -->
+        <LinearLayout android:id="@+id/layoutMenu" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:paddingHorizontal="16dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="@drawable/card_bg"
+                android:padding="20dp" android:layout_marginBottom="12dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_start" android:textSize="16sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" android:layout_marginBottom="4dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_start_hint"
+                    android:textSize="13sp" android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="16dp"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnCreate" android:layout_width="match_parent"
+                    android:layout_height="44dp" android:text="@string/together_create"
+                    android:textColor="@color/text_primary" android:textSize="15sp"
+                    android:background="@drawable/btn_primary" android:stateListAnimator="@null"
+                android:textAllCaps="false"
+/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="@drawable/card_bg"
+                android:padding="20dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_join_title" android:textSize="16sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" android:layout_marginBottom="4dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_join_hint"
+                    android:textSize="13sp" android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="16dp"/>
+                <EditText android:id="@+id/etJoinCode" android:layout_width="match_parent"
+                    android:layout_height="44dp" android:hint="@string/together_code_hint"
+                    android:textColor="@color/text_primary" android:textColorHint="@color/text_hint"
+                    android:background="@drawable/input_bg" android:paddingHorizontal="16dp"
+                    android:inputType="text" android:layout_marginBottom="10dp"
+                    android:gravity="center" android:textSize="20sp" android:letterSpacing="0.2"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnJoin" android:layout_width="match_parent"
+                    android:layout_height="44dp" android:text="@string/together_join"
+                    android:textColor="@color/text_primary" android:textSize="15sp"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                android:textAllCaps="false"
+/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Waiting -->
+        <LinearLayout android:id="@+id/layoutWaiting" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:paddingHorizontal="16dp" android:gravity="center" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="@drawable/card_bg"
+                android:padding="24dp" android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="⏳" android:textSize="40sp" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_waiting_title" android:textSize="16sp"
+                    android:textStyle="bold" android:textColor="@color/text_primary"
+                    android:layout_marginBottom="4dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_share_code" android:textSize="13sp"
+                    android:textColor="@color/text_secondary" android:layout_marginBottom="16dp"/>
+                <TextView android:id="@+id/tvCode" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text=""
+                    android:textSize="40sp" android:textStyle="bold" android:textColor="@color/text_primary"
+                    android:letterSpacing="0.3" android:layout_marginBottom="20dp"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnCancelWaiting" android:layout_width="match_parent"
+                    android:layout_height="48dp" android:text="@string/cancel"
+                    android:textColor="#ffffff" android:background="@drawable/btn_secondary"
+                    android:stateListAnimator="@null"
+                android:textAllCaps="false"
+/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Preference -->
+        <LinearLayout android:id="@+id/layoutPreference" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:paddingHorizontal="16dp" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="@drawable/card_bg" android:padding="20dp">
+                <TextView android:id="@+id/tvPartner"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" android:textColor="?attr/ctAccentLight"
+                    android:textSize="13sp" android:layout_marginBottom="16dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_mood" android:textSize="16sp"
+                    android:textStyle="bold" android:textColor="@color/text_primary"
+                    android:layout_marginBottom="16dp"/>
+                <EditText android:id="@+id/etPreference" android:layout_width="match_parent"
+                    android:layout_height="80dp" android:hint="@string/together_pref_hint"
+                    android:textColor="@color/text_primary" android:textColorHint="@color/text_hint"
+                    android:background="@drawable/input_bg" android:padding="14dp"
+                    android:gravity="top" android:inputType="textMultiLine"
+                    android:layout_marginBottom="12dp"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnSubmit" android:layout_width="match_parent"
+                    android:layout_height="44dp" android:text="@string/together_submit"
+                    android:textColor="@color/text_primary" android:textSize="15sp"
+                    android:background="@drawable/btn_primary" android:stateListAnimator="@null"
+                    android:layout_marginBottom="8dp"
+                android:textAllCaps="false"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnRandom" android:layout_width="match_parent"
+                    android:layout_height="44dp" android:text="@string/together_random"
+                    android:textColor="@color/text_secondary" android:textSize="15sp"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                android:textAllCaps="false"
+/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Submitted -->
+        <LinearLayout android:id="@+id/layoutSubmitted" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:paddingHorizontal="16dp" android:gravity="center" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="@drawable/card_bg"
+                android:padding="32dp" android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="✓" android:textSize="40sp" android:textColor="@color/accent_green"
+                    android:layout_marginBottom="12dp"/>
+                <TextView android:id="@+id/tvStatus"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_submitted" android:textSize="16sp"
+                    android:textStyle="bold" android:textColor="@color/text_primary"
+                    android:layout_marginBottom="6dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/together_waiting_dots" android:textSize="13sp"
+                    android:textColor="@color/text_secondary"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Result -->
+        <LinearLayout android:id="@+id/layoutResult" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:paddingHorizontal="16dp" android:visibility="gone">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:id="@+id/tvResultFound" android:text="@string/together_found" android:textSize="20sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp"/>
+
+            <!-- Movie card -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:background="@drawable/card_bg"
+                android:padding="14dp" android:layout_marginBottom="10dp">
+                <ImageView android:id="@+id/ivResultPoster"
+                    android:layout_width="80dp" android:layout_height="120dp"
+                    android:scaleType="centerCrop" android:background="@drawable/poster_placeholder"
+                    android:layout_marginEnd="14dp"/>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/tvResultTitle"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="17sp" android:textStyle="bold"
+                        android:textColor="@color/text_primary" android:layout_marginBottom="6dp"/>
+                    <TextView android:id="@+id/tvResultSource"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="12sp" android:textColor="?attr/ctAccentLight"
+                        android:layout_marginBottom="10dp"/>
+                    <TextView android:id="@+id/tvResultReason"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="13sp" android:textColor="@color/text_secondary"
+                        android:lineSpacingExtra="3dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Vote buttons -->
+            <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnOk" android:layout_width="match_parent"
+                android:layout_height="44dp" android:text="@string/lets_watch"
+                android:textColor="@color/text_primary" android:textSize="15sp"
+                android:background="@drawable/btn_green" android:stateListAnimator="@null"
+                android:layout_marginBottom="8dp"
+                android:textAllCaps="false"/>
+            <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnAgain" android:layout_width="match_parent"
+                android:layout_height="44dp" android:text="@string/try_again"
+                android:textColor="@color/text_secondary" android:textSize="15sp"
+                android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                android:layout_marginBottom="8dp"
+                android:textAllCaps="false"/>
+            <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnLeave" android:layout_width="wrap_content"
+                android:layout_height="40dp" android:text="@string/together_exit"
+                android:textColor="@color/text_tertiary" android:background="@null"
+                android:stateListAnimator="@null"
+                android:textAllCaps="false"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

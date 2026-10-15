@@ -1,0 +1,244 @@
+import { useState, useEffect, useRef } from 'react'
+import { onIdTokenChanged } from 'firebase/auth'
+import { collection, onSnapshot } from 'firebase/firestore'
+import { auth, db } from './firebase'
+import Sidebar from './components/Sidebar'
+import Watchlist from './pages/Watchlist'
+import Stats from './pages/Stats'
+import AIChat from './pages/AIChat'
+import { TogetherWithBoundary } from './pages/Together'
+import SettingsModal from './components/SettingsModal'
+import { Page, ChatMessage, Movie, Kind } from './types'
+import { TogetherSession } from './services/together'
+import { notifyDataChanged } from './services/events'
+import { backfillTurkish } from './services/localization'
+import { useI18n } from './services/i18n'
+import {
+  syncAddMovie, syncAddWatchLog, isMigrated, markMigrated, collectionNames
+} from './services/sync'
+
+const KINDS: Kind[] = ['movie', 'tv']
+const KIND_KEY = 'cinematrack:kind'
+
+function initialKind(): Kind {
+  try { return localStorage.getItem(KIND_KEY) === 'tv' ? 'tv' : 'movie' } catch { return 'movie' }
+}
+
+export default function App() {
+  const { t } = useI18n()
+  const [page, setPage] = useState<Page>('watchlist')
+  const [kind, setKindState] = useState<Kind>(initialKind)   // CinemaTrack (movies) or DiziTrack (series)
+  const [showSettings, setShowSettings] = useState(false)
+  // Chat and Watch Together state live here so they survive switching pages; one set per kind
+  const [chatMessages, setChatMessages] = useState<Record<Kind, ChatMessage[]>>({ movie: [], tv: [] })
+  const [togetherSessionId, setTogetherSessionId] = useState<Record<Kind, string | null>>({ movie: null, tv: null })
+  const [togetherSession, setTogetherSession] = useState<Record<Kind, TogetherSession | null>>({ movie: null, tv: null })
+  const [notification, setNotification] = useState<string | null>(null)
+  const [syncStatus, setSyncStatus] = useState<string | null>(null)
+  const unsubsRef = useRef<(() => void)[]>([])
+  const migratingRef = useRef(false)
+  const syncedUidRef = useRef<string | null>(null)   // the account the cloud sync is currently running for
+  const tRef = useRef(t)
+  tRef.current = t
+
+  function setKind(k: Kind) {
+    setKindState(k)
+    try { localStorage.setItem(KIND_KEY, k) } catch { /* ignore */ }
+  }
+
+  function showNotif(msg: string) {
+    setNotification(msg)
+    setTimeout(() => setNotification(null), 4000)
+  }
+
+  function stopListeners() {
+    unsubsRef.current.forEach(u => u())
+    unsubsRef.current = []
+  }
+
+  useEffect(() => {
+    // onIdTokenChanged (not onAuthStateChanged): it also fires when a user confirms their e-mail and the
+    // token is refreshed, which is exactly when cloud sync is allowed to start.
+    const unsub = onIdTokenChanged(auth, async user => {
+      // The Firestore rules only let verified accounts in, so there is nothing to sync before that
+      if (!user || !user.emailVerified) {
+        stopListeners()
+        syncedUidRef.current = null
+        return
+      }
+      if (syncedUidRef.current === user.uid) return   // hourly token refresh: sync is already running
+      syncedUidRef.current = user.uid
+
+      // ── Step 1: One-time migration of existing SQLite data to Firestore (movies) ──
+      if (!migratingRef.current) {
+        migratingRef.current = true
+        try {
+          const alreadyMigrated = await isMigrated(user.uid)
+          if (!alreadyMigrated) {
+            setSyncStatus(tRef.current('Syncing your data to the cloud...'))
+            const [watchlist, watchlog] = await Promise.all([
+              window.api.getWatchlist(),
+              window.api.getWatchLog()
+            ])
+            // Push watchlist
+            for (const movie of watchlist) {
+              await syncAddMovie(user.uid, movie).catch(() => {})
+            }
+            // Push watch history
+            for (const entry of watchlog) {
+              await syncAddWatchLog(user.uid, {
+                log_id: entry.remote_id ?? String(entry.log_id),
+                tmdb_id: entry.tmdb_id,
+                title: entry.title,
+                overview: entry.overview,
+                poster_path: entry.poster_path,
+                release_date: entry.release_date,
+                genres: entry.genres,
+                vote_average: entry.vote_average,
+                runtime: entry.runtime ?? null,
+                watched_at: entry.watched_at,
+                rating: entry.rating,
+                notes: entry.notes
+              }).catch(() => {})
+            }
+            await markMigrated(user.uid)
+            setSyncStatus(null)
+            showNotif(tRef.current('☁️ {0} movies synced to cloud!', watchlist.length))
+          }
+        } catch (e) {
+          console.error('Migration error:', e)
+          setSyncStatus(null)
+        } finally {
+          migratingRef.current = false
+        }
+      }
+
+      // ── Step 2: Real-time listeners — Firestore → SQLite, for movies and for series ──
+      // When the phone adds/removes/logs something, the desktop updates automatically.
+      stopListeners()
+      for (const k of KINDS) {
+        const names = collectionNames(k)
+
+        // Watchlist
+        unsubsRef.current.push(onSnapshot(
+          collection(db, 'watchlists', user.uid, names.list),
+          async snapshot => {
+            let changed = false
+            for (const change of snapshot.docChanges()) {
+              if (change.type === 'added' || change.type === 'modified') {
+                const movie = change.doc.data() as Movie
+                const inList = await window.api.checkWatchlist(movie.tmdb_id, k)
+                if (!inList && change.type === 'added') {
+                  await window.api.addToWatchlist(movie, k).catch(() => {})
+                  changed = true
+                } else if (inList) {
+                  // refresh the stored copy (e.g. the Turkish title another device just added)
+                  await window.api.addToWatchlist(movie, k).catch(() => {})
+                  if (change.type === 'modified' || movie.title_tr != null) changed = true
+                }
+              }
+              if (change.type === 'removed') {
+                const movie = change.doc.data()
+                const wl = await window.api.getWatchlist(k)
+                const entry = (wl as { tmdb_id: number; id: number }[]).find(m => m.tmdb_id === movie.tmdb_id)
+                if (entry) {
+                  await window.api.removeFromWatchlist(entry.id, k).catch(() => {})
+                  changed = true
+                }
+              }
+            }
+            // the open page re-reads the local database (it only reads it once when it opens)
+            if (changed) notifyDataChanged()
+          },
+          err => console.error('Watchlist listener error:', err)
+        ))
+
+        // Watch log — entries are matched by Firestore doc id (remote_id): nothing gets duplicated and
+        // deletions on either device are mirrored. The watchlist itself is handled by the listener above.
+        unsubsRef.current.push(onSnapshot(
+          collection(db, 'watchlists', user.uid, names.log),
+          async snapshot => {
+            let changed = false
+            for (const change of snapshot.docChanges()) {
+              if (change.type === 'added' || change.type === 'modified') {
+                const entry = change.doc.data()
+                const res = await window.api.addRemoteWatchLog({
+                  remoteId: change.doc.id,
+                  watchedAt: entry.watched_at,
+                  rating: entry.rating ?? null,
+                  notes: entry.notes ?? null,
+                  movie: {
+                    tmdb_id: entry.tmdb_id, title: entry.title, overview: entry.overview || '',
+                    poster_path: entry.poster_path ?? null, release_date: entry.release_date || '',
+                    genres: entry.genres || [], vote_average: entry.vote_average || 0, runtime: entry.runtime ?? null,
+                    title_tr: entry.title_tr ?? null, overview_tr: entry.overview_tr ?? null
+                  }
+                }, k).catch(() => null)
+                if (res?.added || change.type === 'modified') changed = true
+              }
+              if (change.type === 'removed') {
+                await window.api.removeRemoteWatchLog(change.doc.id, k).catch(() => {})
+                changed = true
+              }
+            }
+            if (changed) notifyDataChanged()
+          },
+          err => console.error('Watchlog listener error:', err)
+        ))
+      }
+
+      // Entries saved before the Turkish copy existed: fill it in once, quietly
+      backfillTurkish(user.uid)
+    })
+
+    return () => {
+      unsub()
+      stopListeners()
+    }
+  }, [])
+
+  // Same state setters, scoped to the current kind
+  const setMessagesFor = (k: Kind): React.Dispatch<React.SetStateAction<ChatMessage[]>> => value =>
+    setChatMessages(prev => ({
+      ...prev,
+      [k]: typeof value === 'function' ? (value as (p: ChatMessage[]) => ChatMessage[])(prev[k]) : value
+    }))
+
+  return (
+    <div data-kind={kind} className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden select-none">
+      <Sidebar page={page} setPage={setPage} kind={kind} setKind={setKind} onSettings={() => setShowSettings(true)} />
+      <main className="flex-1 overflow-hidden relative">
+        {page === 'watchlist' && <Watchlist key={kind} kind={kind} />}
+        {page === 'stats'     && <Stats key={kind} kind={kind} />}
+        {page === 'ai'        && <AIChat key={kind} kind={kind} messages={chatMessages[kind]} setMessages={setMessagesFor(kind)} />}
+        {page === 'together'  && (
+          <TogetherWithBoundary
+            key={kind}
+            kind={kind}
+            sessionId={togetherSessionId[kind]}
+            setSessionId={id => setTogetherSessionId(prev => ({ ...prev, [kind]: id }))}
+            session={togetherSession[kind]}
+            setSession={s => setTogetherSession(prev => ({ ...prev, [kind]: s }))}
+          />
+        )}
+
+        {/* Sync status */}
+        {syncStatus && (
+          <div className="absolute top-4 right-4 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+            <span className="animate-spin">⟳</span> {syncStatus}
+          </div>
+        )}
+
+        {/* Notification */}
+        {notification && (
+          <div className="absolute top-4 right-4 bg-emerald-800 border border-emerald-600 text-emerald-100 text-sm px-4 py-2.5 rounded-xl shadow-lg">
+            {notification}
+          </div>
+        )}
+      </main>
+      {showSettings && (
+        <SettingsModal isFirstRun={false} onClose={() => setShowSettings(false)} />
+      )}
+    </div>
+  )
+}

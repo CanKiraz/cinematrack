@@ -1,0 +1,24 @@
+{
+  "name": "cinematrack-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CinemaTrack API proxy (Cloudflare Worker): keeps the TMDB, Gemini and RapidAPI keys off the apps",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply cinematrack --local",
+    "db:migrate:remote": "wrangler d1 migrations apply cinematrack --remote"
+  },
+  "dependencies": {
+    "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261015.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4",
+    "wrangler": "^4.151.0"
+  }
+}

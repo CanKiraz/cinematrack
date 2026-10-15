@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/bg_primary">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@color/bg_surface"
+        android:paddingHorizontal="16dp" android:paddingTop="20dp" android:paddingBottom="14dp">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:id="@+id/tvTitle" android:text="@string/my_watchlist" android:textSize="24sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+                <TextView android:id="@+id/tvCount"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0 movies" android:textSize="13sp" android:textColor="@color/text_secondary"/>
+            </LinearLayout>
+            <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnAddMovie"
+                android:layout_width="wrap_content" android:layout_height="44dp"
+                android:text="@string/add_movie" android:textColor="@color/text_primary"
+                android:textSize="13sp" android:background="@drawable/btn_primary"
+                android:stateListAnimator="@null"
+ android:paddingHorizontal="16dp"
+                android:textAllCaps="false"/>
+        </LinearLayout>
+
+        <!-- Filter + Sort row -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <EditText android:id="@+id/etFilter"
+                android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                android:hint="@string/filter_hint" android:textColorHint="@color/text_hint"
+                android:textColor="@color/text_primary" android:background="@drawable/input_bg"
+                android:paddingHorizontal="12dp" android:inputType="text"
+                android:layout_marginEnd="8dp"/>
+            <Spinner android:id="@+id/spSort"
+                android:layout_width="110dp" android:layout_height="44dp"
+                android:background="@drawable/input_bg"
+                android:paddingHorizontal="8dp"
+                android:spinnerMode="dropdown"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- List -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <ListView android:id="@+id/lvMovies"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:divider="@null" android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:clipToPadding="false"/>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Empty state -->
+    <LinearLayout android:id="@+id/layoutEmpty"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:gravity="center"
+        android:padding="48dp" android:visibility="gone">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:id="@+id/tvEmptyIcon" android:text="🎬" android:textSize="56sp" android:layout_marginBottom="16dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:id="@+id/tvEmptyTitle" android:text="@string/empty_watchlist_title" android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" android:gravity="center"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:id="@+id/tvEmptyHint" android:text="@string/empty_watchlist_hint" android:textSize="14sp"
+            android:textColor="@color/text_secondary" android:gravity="center"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</LinearLayout>

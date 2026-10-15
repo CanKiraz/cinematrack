@@ -1,0 +1,30 @@
+# Secrets and local config: never commit these
+.env
+.env.*
+!.env.example
+.dev.vars
+local.properties
+*.keystore
+*.jks
+service-account*.json
+
+# Build output
+node_modules/
+out/
+dist/
+build/
+.gradle/
+*.apk
+*.aab
+*.tsbuildinfo
+
+# Worker (Cloudflare)
+.wrangler/
+
+# Editors / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

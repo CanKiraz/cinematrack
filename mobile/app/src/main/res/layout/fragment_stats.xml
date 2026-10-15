@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg_primary">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header with simple filter buttons, reversed order -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@color/bg_surface"
+            android:padding="20dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginBottom="20dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/statistics" android:textSize="24sp" android:textStyle="bold"
+                        android:textColor="@color/text_primary"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/stats_subtitle" android:textSize="13sp"
+                        android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnSignOut"
+                    android:layout_width="wrap_content" android:layout_height="36dp"
+                    android:text="@string/sign_out" android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                    android:paddingHorizontal="14dp" android:textAllCaps="false"/>
+            </LinearLayout>
+
+            <!-- Period selector - reversed: Week Month Year All -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnWeek"
+                    android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+                    android:text="@string/week" android:textSize="13sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                    android:layout_marginEnd="6dp"
+                android:textAllCaps="false"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnMonth"
+                    android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+                    android:text="@string/month" android:textSize="13sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                    android:layout_marginEnd="6dp"
+                android:textAllCaps="false"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnYear"
+                    android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+                    android:text="@string/year" android:textSize="13sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
+                    android:layout_marginEnd="6dp"
+                android:textAllCaps="false"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnAll"
+                    android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+                    android:text="@string/all" android:textSize="13sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/btn_primary" android:stateListAnimator="@null"
+                android:textAllCaps="false"
+/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Stat cards -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="12dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="88dp"
+                    android:layout_weight="1" android:background="@drawable/card_bg"
+                    android:orientation="vertical" android:gravity="center"
+                    android:layout_marginEnd="6dp">
+                    <TextView android:id="@+id/tvTotal" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="0"
+                        android:textSize="32sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/total" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="88dp"
+                    android:layout_weight="1" android:background="@drawable/card_bg"
+                    android:orientation="vertical" android:gravity="center"
+                    android:layout_marginStart="6dp">
+                    <TextView android:id="@+id/tvPeriod" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="0"
+                        android:textSize="32sp" android:textStyle="bold" android:textColor="?attr/ctAccentLight"/>
+                    <TextView android:id="@+id/tvPeriodLabel" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="@string/this_month"
+                        android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="20dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="88dp"
+                    android:layout_weight="1" android:background="@drawable/card_bg"
+                    android:orientation="vertical" android:gravity="center"
+                    android:layout_marginEnd="6dp">
+                    <TextView android:id="@+id/tvAvgRating" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="—"
+                        android:textSize="32sp" android:textStyle="bold" android:textColor="@color/accent_yellow"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/avg_rating" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="88dp"
+                    android:layout_weight="1" android:background="@drawable/card_bg"
+                    android:orientation="vertical" android:gravity="center"
+                    android:layout_marginStart="6dp" android:padding="8dp">
+                    <TextView android:id="@+id/tvTopGenre" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="—"
+                        android:textSize="15sp" android:textStyle="bold"
+                        android:textColor="@color/accent_green_light" android:gravity="center"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/top_genre" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/watch_history" android:textSize="18sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp"
+                android:layout_marginHorizontal="4dp"/>
+
+            <LinearLayout android:id="@+id/layoutEmpty"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:gravity="center"
+                android:padding="32dp" android:visibility="gone">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:id="@+id/tvEmptyText" android:text="@string/stats_empty_movies"
+                    android:textColor="@color/text_secondary" android:textSize="14sp"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/llHistory"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

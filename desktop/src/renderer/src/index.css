@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  background: #09090b;
+}
+
+/* Thin dark scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* Animate bounce for chat typing dots */
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+}
+.dot-1 { animation: bounce-dot 1.2s infinite 0s; }
+.dot-2 { animation: bounce-dot 1.2s infinite 0.2s; }
+.dot-3 { animation: bounce-dot 1.2s infinite 0.4s; }
+
+/* DiziTrack (series): the same UI with a purple accent instead of blue.
+   App.tsx puts data-kind="tv" on the root element; these rules re-colour every Tailwind "blue" utility. */
+[data-kind="tv"] .bg-blue-600 { background-color: #7c3aed; }
+[data-kind="tv"] .bg-blue-500 { background-color: #8b5cf6; }
+[data-kind="tv"] .hover\:bg-blue-500:hover { background-color: #8b5cf6; }
+[data-kind="tv"] .hover\:bg-blue-400:hover { background-color: #a78bfa; }
+[data-kind="tv"] .bg-blue-600\/15 { background-color: rgb(124 58 237 / 0.15); }
+[data-kind="tv"] .bg-blue-900\/30 { background-color: rgb(76 29 149 / 0.3); }
+[data-kind="tv"] .bg-blue-900\/40 { background-color: rgb(76 29 149 / 0.4); }
+[data-kind="tv"] .bg-blue-900\/50 { background-color: rgb(76 29 149 / 0.5); }
+[data-kind="tv"] .bg-blue-900\/60 { background-color: rgb(76 29 149 / 0.6); }
+[data-kind="tv"] .border-blue-500 { border-color: #8b5cf6; }
+[data-kind="tv"] .focus\:border-blue-500:focus { border-color: #8b5cf6; }
+[data-kind="tv"] .border-blue-600 { border-color: #7c3aed; }
+[data-kind="tv"] .border-blue-600\/40 { border-color: rgb(124 58 237 / 0.4); }
+[data-kind="tv"] .border-blue-700 { border-color: #6d28d9; }
+[data-kind="tv"] .border-blue-700\/50 { border-color: rgb(109 40 217 / 0.5); }
+[data-kind="tv"] .text-blue-300 { color: #c4b5fd; }
+[data-kind="tv"] .hover\:text-blue-300:hover { color: #c4b5fd; }
+[data-kind="tv"] .text-blue-400 { color: #a78bfa; }

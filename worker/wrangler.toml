@@ -1,0 +1,29 @@
+name = "cinematrack-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Tokens are only accepted when they were issued by this Firebase project
+FIREBASE_PROJECT_ID = "cinematrack-f5ee4"
+
+# Optional overrides (see src/limits.ts and README):
+#   LIMITS = '{"chat":{"perUser":50}}'     change a usage limit without touching the code
+#   DISABLED = "true"                       kill switch: every call except /health answers 503
+#   DISABLED_FEATURES = "ai,instagram"      switch off single features (tmdb, ai, instagram)
+
+# Usage counters and the Instagram caption cache.
+#   npx wrangler d1 create cinematrack      then put the printed id below
+[[d1_databases]]
+binding = "DB"
+database_name = "cinematrack"
+database_id = "REPLACE-WITH-THE-ID-PRINTED-BY-wrangler-d1-create"
+
+[triggers]
+# Daily housekeeping: drops old usage rows and cached captions
+crons = ["17 3 * * *"]
+
+# Secrets are NOT in this file. Set them once with:
+#   npx wrangler secret put TMDB_KEY
+#   npx wrangler secret put GEMINI_KEY
+#   npx wrangler secret put RAPID_KEY
+# For local development copy .dev.vars.example to .dev.vars.

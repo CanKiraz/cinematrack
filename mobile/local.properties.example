@@ -1,0 +1,5 @@
+## Copy this file to local.properties (it is git-ignored) and fill in your own keys.
+sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
+TMDB_KEY=
+GEMINI_KEY=
+RAPID_KEY=

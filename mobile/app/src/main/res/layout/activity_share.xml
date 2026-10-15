@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="20dp" android:background="#18181b">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🎬" android:textSize="22sp" android:layout_marginEnd="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/share_title" android:textSize="17sp"
+            android:textStyle="bold" android:textColor="#ffffff"/>
+    </LinearLayout>
+
+    <!-- Status -->
+    <TextView android:id="@+id/tvStatus"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/share_identifying_initial" android:textSize="13sp"
+        android:textColor="#ffffff" android:layout_marginBottom="8dp"/>
+
+    <ProgressBar android:id="@+id/progressBar"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" android:layout_marginBottom="8dp"
+        android:visibility="gone"/>
+
+    <!-- Movie options list -->
+    <LinearLayout android:id="@+id/layoutResults"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone">
+        <ListView android:id="@+id/lvResults"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:divider="#3f3f46" android:dividerHeight="1dp"
+            android:background="#27272a" android:layout_marginBottom="12dp"/>
+    </LinearLayout>
+
+    <!-- Search box -->
+    <LinearLayout android:id="@+id/layoutSearch"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="12dp">
+            <EditText android:id="@+id/etSearch"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="48dp" android:hint="@string/share_search_box_hint"
+                android:textColorHint="#a1a1aa" android:textColor="#ffffff"
+                android:background="@drawable/input_bg" android:paddingHorizontal="12dp"
+                android:inputType="text" android:imeOptions="actionSearch"
+                android:layout_marginEnd="8dp"/>
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSearch"
+                android:layout_width="wrap_content" android:layout_height="48dp"
+                android:text="@string/search" android:textColor="#ffffff"
+                android:textAllCaps="false" android:background="@drawable/btn_primary"
+                android:paddingHorizontal="14dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Cancel -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnCancel"
+        android:layout_width="match_parent" android:layout_height="44dp"
+        android:text="@string/cancel" android:textColor="#ffffff"
+        android:textAllCaps="false" android:background="@drawable/btn_secondary"/>
+
+</LinearLayout>

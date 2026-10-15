@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 11+ hides other installed apps from us unless they are listed here.
+         These are the streaming apps (see Providers.java) we show as "installed" / "not installed". -->
+    <queries>
+        <package android:name="com.netflix.mediaclient" />
+        <package android:name="com.disney.disneyplus" />
+        <package android:name="com.amazon.avod.thirdpartyclient" />
+        <package android:name="com.wbd.stream" />
+        <package android:name="com.bluetv.android" />
+        <package android:name="com.google.android.videos" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.apple.atve.androidtv.appletv" />
+        <package android:name="com.mubi" />
+        <package android:name="com.exxen.android" />
+        <package android:name="com.trgain.mikrogain" />
+        <package android:name="com.trt.tabii.android" />
+        <package android:name="com.digiturk.tod.mobil" />
+        <package android:name="com.dogusdigital.puhutv" />
+        <package android:name="com.ttnet.tivibucep" />
+        <package android:name="com.turkcell.ott" />
+        <package android:name="com.digiturk.iq.mobil" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CinemaTrack">
+
+        <activity android:name=".LoginActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- configChanges: rotating the phone must not recreate the tabs (it would drop a Watch Together session) -->
+        <activity android:name=".MainActivity" android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"/>
+        <activity android:name=".SearchActivity" android:exported="false"/>
+        <activity android:name=".ShareActivity" android:exported="true"
+            android:theme="@style/Theme.CinemaTrack.Dialog">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- Remembers the language chosen with the EN/TR button on Android 12 and older -->
+        <service android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false" android:exported="false">
+            <meta-data android:name="autoStoreLocales" android:value="true" />
+        </service>
+    </application>
+</manifest>

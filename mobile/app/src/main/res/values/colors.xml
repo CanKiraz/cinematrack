@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#09090b</color>
+    <color name="bg_surface">#18181b</color>
+    <color name="bg_card">#27272a</color>
+    <color name="bg_card2">#1c1c1f</color>
+    <color name="border">#3f3f46</color>
+    <color name="border_light">#52525b</color>
+    <color name="accent_blue">#2563eb</color>
+    <color name="accent_blue_light">#3b82f6</color>
+    <color name="accent_blue_dark">#1d4ed8</color>
+    <color name="accent_blue_soft">#1e3a5f</color>
+    <color name="accent_dizi">#7c3aed</color>
+    <color name="accent_dizi_light">#a78bfa</color>
+    <color name="accent_dizi_dark">#6d28d9</color>
+    <color name="accent_dizi_soft">#3b2470</color>
+    <color name="accent_green">#16a34a</color>
+    <color name="accent_green_light">#22c55e</color>
+    <color name="accent_red">#dc2626</color>
+    <color name="accent_yellow">#facc15</color>
+    <color name="accent_purple">#7c3aed</color>
+    <color name="text_primary">#ffffff</color>
+    <color name="text_secondary">#a1a1aa</color>
+    <color name="text_tertiary">#71717a</color>
+    <color name="text_hint">#52525b</color>
+    <color name="overlay">#80000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="ic_launcher_background">#09090b</color>
+</resources>
