@@ -17,17 +17,9 @@ import okhttp3.ResponseBody;
 public final class Tmdb {
     private Tmdb() {}
 
-    private static final String BASE = "https://api.themoviedb.org/3";
-
+    /** `path` is the TMDB path ("/search/movie?query=..."): the CinemaTrack API adds the key and enforces the limits. */
     public static JSONObject get(OkHttpClient http, String path) throws Exception {
-        String url = BASE + path + (path.contains("?") ? "&" : "?") + "api_key=" + FirestoreHelper.TMDB_KEY;
-        try (Response resp = http.newCall(new Request.Builder().url(url).build()).execute()) {
-            ResponseBody body = resp.body();
-            if (body == null) throw new IOException("Empty response");
-            String text = body.string();
-            if (!resp.isSuccessful()) throw new IOException("TMDB HTTP " + resp.code());
-            return new JSONObject(text);
-        }
+        return ApiClient.get(http, "/v1/tmdb" + path);
     }
 
     private static String enc(String s) throws Exception { return URLEncoder.encode(s, "UTF-8"); }

@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         showCurrent();
 
         Localization.backfillInBackground(user.getUid());
+        SessionCleanup.run(user.getUid());   // forgotten Watch Together sessions
     }
 
     @Override

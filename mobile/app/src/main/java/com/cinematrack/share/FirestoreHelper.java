@@ -16,12 +16,6 @@ import java.util.*;
  */
 public class FirestoreHelper {
 
-    // Keys come from local.properties (not in git) via BuildConfig - see app/build.gradle
-    public static final String TMDB_KEY = BuildConfig.TMDB_KEY;
-    public static final String GEMINI_KEY = BuildConfig.GEMINI_KEY;
-    public static final String RAPID_KEY = BuildConfig.RAPID_KEY;
-    public static final String RAPID_HOST = "instagram-scraper-api12.p.rapidapi.com";
-
     private static FirebaseFirestore db() { return FirebaseFirestore.getInstance(); }
 
     /** Same name the desktop app uses in Watch Together (Firebase displayName, else the part of the email before the @). */

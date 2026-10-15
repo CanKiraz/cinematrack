@@ -1,5 +1,5 @@
-## Copy this file to local.properties (it is git-ignored) and fill in your own keys.
+## Copy this file to local.properties (it is git-ignored).
 sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
-TMDB_KEY=
-GEMINI_KEY=
-RAPID_KEY=
+
+## Optional: develop against your own CinemaTrack API (worker/) instead of the official one.
+#API_URL=http://10.0.2.2:8787

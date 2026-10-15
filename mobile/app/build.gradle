@@ -3,16 +3,13 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
-// API keys live in local.properties (git-ignored) or in environment variables - never in source.
-// Copy local.properties.example and fill it in.
+// The app holds no TMDB / Gemini / RapidAPI keys: it talks to the CinemaTrack API (worker/).
+// To develop against your own API, set API_URL in local.properties (git-ignored) or as an environment variable.
 def localProps = new Properties()
 def localPropsFile = rootProject.file('local.properties')
 if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it) }
-def secret = { String name ->
-    def value = localProps.getProperty(name) ?: System.getenv(name) ?: ''
-    if (value.isEmpty()) logger.warn("WARNING: ${name} is not set in local.properties - the related feature will not work.")
-    return value
-}
+def apiUrl = (localProps.getProperty('API_URL') ?: System.getenv('API_URL') ?: 'https://cinematrack-api.cinematrack-api.workers.dev')
+    .trim().replaceAll('/+$', '')
 
 android {
     namespace 'com.cinematrack.share'
@@ -23,9 +20,7 @@ android {
         targetSdk 34
         versionCode 3
         versionName "3.0"
-        buildConfigField "String", "TMDB_KEY",   "\"${secret('TMDB_KEY')}\""
-        buildConfigField "String", "GEMINI_KEY", "\"${secret('GEMINI_KEY')}\""
-        buildConfigField "String", "RAPID_KEY",  "\"${secret('RAPID_KEY')}\""
+        buildConfigField "String", "API_URL", "\"${apiUrl}\""
     }
     buildTypes {
         release { minifyEnabled false }

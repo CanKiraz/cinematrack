@@ -19,6 +19,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.security.SecureRandom;
 import java.util.*;
@@ -355,6 +356,7 @@ public class TogetherFragment extends Fragment {
         final boolean turkish = Lang.isTurkish();
         executor.execute(() -> {
             Map<String, Object> result = null;
+            String errorCode = null;
             try {
                 String creatorId = String.valueOf(session.get("creatorId"));
                 String partnerId = String.valueOf(session.get("partnerId"));
@@ -373,31 +375,36 @@ public class TogetherFragment extends Fragment {
                 List<Map<String, Object>> creatorWatched = listOf(creatorPayload, "watched");
                 List<Map<String, Object>> partnerWatched = listOf(partnerPayload, "watched");
 
-                String prompt = buildPrompt(creatorUsername, partnerUsername,
-                    creatorWatched, creatorList, creatorRandom ? "Random" : "Prompt: " + creatorPref,
-                    partnerWatched, partnerList, partnerRandom ? "Random" : "Prompt: " + partnerPref, turkish);
+                // The CinemaTrack API builds the prompt and asks Gemini: we only send data (users[0] = creator)
+                JSONObject request = new JSONObject();
+                request.put("kind", kind.key);
+                request.put("language", turkish ? "tr" : "en");
+                request.put("users", new JSONArray()
+                    .put(aiUser(creatorUsername, creatorRandom, creatorPref, creatorWatched, creatorList))
+                    .put(aiUser(partnerUsername, partnerRandom, partnerPref, partnerWatched, partnerList)));
 
-                String raw = GeminiClient.generate(http, prompt, 8192, 0.4, true);
-                int a = raw.indexOf('{'), b = raw.lastIndexOf('}');
-                JSONObject rec = new JSONObject(raw.substring(a, b + 1)).getJSONObject("recommended_movie");
+                JSONObject rec = ApiClient.post(http, "/v1/ai/together", request).optJSONObject("pick");
+                if (rec != null) {
+                    String title = rec.optString("title");
+                    Map<String, Object> movie = findByTitle(title, creatorList, partnerList);
+                    if (movie == null) movie = lookupOnTmdb(title);
 
-                String title = rec.optString("title");
-                Map<String, Object> movie = findByTitle(title, creatorList, partnerList);
-                if (movie == null) movie = lookupOnTmdb(title);
-
-                if (movie != null) {
-                    result = new HashMap<>(movie);
-                    String[] src = mapSource(rec.optString("source"), creatorUsername, partnerUsername);
-                    result.put("source", src[0]);
-                    result.put("sourceLabel", src[1]);
-                    result.put("reasoning", rec.optString("reasoning"));
+                    if (movie != null) {
+                        result = new HashMap<>(movie);
+                        String[] src = mapSource(rec.optString("source"), creatorUsername, partnerUsername);
+                        result.put("source", src[0]);
+                        result.put("sourceLabel", src[1]);
+                        result.put("reasoning", rec.optString("reasoning"));
+                    }
                 }
-            } catch (Exception ignored) {
-                // result stays null → both screens show "no match, try again"
+            } catch (Exception e) {
+                // result stays null. An API problem (for instance "daily limit reached") is passed on so both
+                // screens can say why; anything else shows the plain "no match, try again".
+                if (e instanceof ApiClient.ApiException) errorCode = ((ApiClient.ApiException) e).code;
             }
 
             Map<String, Object> finalResult = result;
-            sessionRef(sid).update("result", finalResult, "status", "resolved");
+            sessionRef(sid).update("result", finalResult, "status", "resolved", "error", errorCode);
             handler.post(() -> { if (progressBar != null) progressBar.setVisibility(View.GONE); });
         });
     }
@@ -412,76 +419,31 @@ public class TogetherFragment extends Fragment {
         return list;
     }
 
-    private String formatMovieList(List<Map<String, Object>> movies) {
-        if (movies.isEmpty()) return "Empty";
-        StringBuilder sb = new StringBuilder();
-        for (Map<String, Object> m : movies) {
-            sb.append("- ").append(m.get("title"));
-            List<?> g = (List<?>) m.get("genres");
-            sb.append(" (");
-            if (g != null && !g.isEmpty()) {
-                sb.append(g.get(0));
-                if (g.size() > 1) sb.append(", ").append(g.get(1));
-            } else sb.append("Unknown");
-            sb.append(")");
-            Object r = m.get("vote_average");
-            if (r instanceof Number && ((Number) r).doubleValue() > 0) {
-                sb.append(String.format(Locale.US, " ★%.1f", ((Number) r).doubleValue()));
-            }
-            Object date = m.get("release_date");
-            if (date instanceof String && ((String) date).length() >= 4) sb.append(" [").append(((String) date).substring(0, 4)).append("]");
-            sb.append("\n");
-        }
-        return sb.toString().trim();
+    /** One person's side of the request: what they want, and the facts about their watched and wanted titles. */
+    private JSONObject aiUser(String name, boolean random, String pref,
+                              List<Map<String, Object>> watched, List<Map<String, Object>> watchlist) throws Exception {
+        JSONObject u = new JSONObject();
+        u.put("name", name);
+        u.put("random", random);
+        u.put("prompt", random ? "" : pref);
+        u.put("watched", aiItems(watched));
+        u.put("watchlist", aiItems(watchlist));
+        return u;
     }
 
-    private String buildPrompt(String creator, String partner,
-                               List<Map<String, Object>> cWatched, List<Map<String, Object>> cList, String cChoice,
-                               List<Map<String, Object>> pWatched, List<Map<String, Object>> pList, String pChoice,
-                               boolean turkish) {
-        String prompt = "[TASK DESCRIPTION AND ROLE]\n"
-            + "You are an expert movie assistant and recommendation engine working for the \"Watch Together\" feature of the \"Cinematrack\" app. "
-            + "Your goal is to analyze the watch histories (Watched), watchlists (Watchlist), and current preferences of two users (" + creator + " and " + partner + ") "
-            + "to select the absolute best *single movie* that will satisfy them both.\n"
-            + "When making your decision, you MUST STRICTLY FOLLOW THE RULES BELOW:\n\n"
-            + "CASE 1: If both users selected \"Random\" (Pick from Watchlist):\n"
-            + "1. Priority: Select a movie that is mutually present in BOTH users' Watchlists.\n"
-            + "2. Alternative: If there is no common movie, select a movie present in ONLY ONE user's Watchlist, but ensure it strongly aligns with the OTHER user's taste by analyzing their previously watched movies (genre, year, rating).\n"
-            + "3. Last Resort: If there are no suitable movies in either list, recommend a brand new movie that both users will love, based on a combined analysis of both their watch histories.\n\n"
-            + "CASE 2: If one user selected \"Random\" and the other selected \"Prompt\" (Description):\n"
-            + "1. Priority: Select a movie that is mutually present in BOTH users' Watchlists AND matches the provided Prompt.\n"
-            + "2. Alternative: If not available, select a movie from the \"Random\" selector's Watchlist that matches the provided Prompt.\n"
-            + "3. Last Resort: If there are no suitable movies in the lists, analyze both users' watch histories and recommend a brand new movie that STRICTLY MATCHES THE PROMPT.\n\n"
-            + "CASE 3: If both users entered a \"Prompt\" (Description):\n"
-            + "1. Priority: Select a movie that is mutually present in BOTH users' Watchlists AND simultaneously satisfies both Prompts.\n"
-            + "2. Alternative: If not available, select a movie from EITHER user's Watchlist that satisfies both Prompts.\n"
-            + "3. Last Resort: If not available in the lists, recommend a brand new movie that STRICTLY SATISFIES BOTH PROMPTS, taking both users' watch histories into account.\n\n"
-            + "[INDEPENDENT RECOMMENDATION RULES (OUTSIDE WATCHLIST)]\n"
-            + "If you cannot find a movie from the users' lists and must recommend one from your own database (as a Last Resort), adhere to these rules:\n"
-            + "- The movie must be popular and widely acclaimed by general audiences.\n"
-            + "- It must have a high audience/critic score (e.g., IMDb 7.0+).\n"
-            + "- Avoid obscure or highly niche movies unless the users specifically request \"experimental, obscure, indie\" etc. in their prompts.\n\n"
-            + "---\n[USER DATA]\n"
-            + "<" + creator + "_DATA>\nPreviously Watched:\n" + formatMovieList(cWatched)
-            + "\nWatchlist:\n" + formatMovieList(cList) + "\nChoice: " + cChoice + "\n</" + creator + "_DATA>\n\n"
-            + "<" + partner + "_DATA>\nPreviously Watched:\n" + formatMovieList(pWatched)
-            + "\nWatchlist:\n" + formatMovieList(pList) + "\nChoice: " + pChoice + "\n</" + partner + "_DATA>\n\n"
-            + "---\n[RETURN MESSAGE FORMAT AND CLOSING]\n"
-            + "For the application to process this data smoothly, you MUST return your response ONLY in the following JSON format. "
-            + "Do not use any extra text, explanations, or markdown blocks outside of the JSON. "
-            + (turkish ? "Write the \"reasoning\" text in Turkish. " : "Write the \"reasoning\" text in English. ")
-            + "Keep \"title\" in its original/English form.\n"
-            + "{\n  \"recommended_movie\": {\n    \"title\": \"Movie Title\",\n    \"year\": \"Release Year\",\n    \"genre\": \"Genres\",\n"
-            + "    \"reasoning\": \"A short, engaging explanation addressed to the users detailing why this movie was chosen and how it matches their tastes or prompts.\",\n"
-            + "    \"source\": \"Both Watchlists | " + creator + " Watchlist | " + partner + " Watchlist | Gemini Recommendation\"\n  }\n}";
-
-        if (kind.isTv()) {   // same rules, but for TV series (the JSON key stays as is)
-            prompt = prompt.replace("recommended_movie", "@@KEY@@")
-                .replace("movies", "TV series").replace("Movie Title", "Series Title")
-                .replace("movie", "TV series").replace("Movie", "TV series")
-                .replace("@@KEY@@", "recommended_movie");
+    private JSONArray aiItems(List<Map<String, Object>> movies) throws Exception {
+        JSONArray out = new JSONArray();
+        for (Map<String, Object> m : movies) {
+            JSONObject item = new JSONObject();
+            item.put("title", m.get("title"));
+            Object genres = m.get("genres");
+            if (genres instanceof List) item.put("genres", new JSONArray((List<?>) genres));
+            item.put("vote_average", m.get("vote_average"));
+            item.put("release_date", m.get("release_date"));
+            item.put("rating", m.get("rating"));
+            out.put(item);
         }
-        return prompt;
+        return out;
     }
 
     /** Exact (case-insensitive) title match in either watchlist, so we keep the poster etc. */
@@ -495,17 +457,14 @@ public class TogetherFragment extends Fragment {
         return null;
     }
 
-    /** Same values the desktop app writes: source key + human label. */
+    /**
+     * Same values the desktop app writes: source key + human label. The API answers "both", "first" (the creator,
+     * who was sent first), "second" (the partner) or "gemini".
+     */
     private String[] mapSource(String src, String creator, String partner) {
-        String s = src == null ? "" : src.trim();
-        if (s.equalsIgnoreCase("Both Watchlists")) return new String[]{"Both Watchlists", "In both watchlists"};
-        // Check the longer name first so "ann" doesn't swallow "joann"
-        boolean creatorFirst = creator.length() >= partner.length();
-        String lower = s.toLowerCase(Locale.ROOT);
-        boolean isCreator = lower.contains(creator.toLowerCase(Locale.ROOT));
-        boolean isPartner = lower.contains(partner.toLowerCase(Locale.ROOT));
-        if (isCreator && (!isPartner || creatorFirst)) return new String[]{"Host Watchlist", "From " + creator + "'s watchlist"};
-        if (isPartner) return new String[]{"User2 Watchlist", "From " + partner + "'s watchlist"};
+        if ("both".equals(src)) return new String[]{"Both Watchlists", "In both watchlists"};
+        if ("first".equals(src)) return new String[]{"Host Watchlist", "From " + creator + "'s watchlist"};
+        if ("second".equals(src)) return new String[]{"User2 Watchlist", "From " + partner + "'s watchlist"};
         return new String[]{"Gemini Recommendation", "Gemini Recommendation"};
     }
 
@@ -617,7 +576,13 @@ public class TogetherFragment extends Fragment {
             // Resolution failed or nothing matched
             tvResultTitle.setText(R.string.together_no_match);
             tvResultSource.setText("");
-            tvResultReason.setText(R.string.together_no_match_hint);
+            Object errorCode = session.get("error");
+            if (errorCode instanceof String) {
+                // e.g. the daily limit: say so instead of suggesting different preferences
+                tvResultReason.setText(new ApiClient.ApiException((String) errorCode, 0).getMessage());
+            } else {
+                tvResultReason.setText(R.string.together_no_match_hint);
+            }
             ivResultPoster.setImageDrawable(null);
             btnOk.setVisibility(View.GONE);
             btnAgain.setEnabled(true);
@@ -660,6 +625,7 @@ public class TogetherFragment extends Fragment {
         Map<String, Object> reset = new HashMap<>();
         reset.put("status", "both_joined");
         reset.put("result", null);
+        reset.put("error", null);
         reset.put("creatorPreference", null);
         reset.put("partnerPreference", null);
         reset.put("creatorIsRandom", false);

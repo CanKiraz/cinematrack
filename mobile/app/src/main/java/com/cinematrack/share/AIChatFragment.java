@@ -17,6 +17,8 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.*;
 import java.util.concurrent.*;
 import okhttp3.OkHttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class AIChatFragment extends Fragment {
 
@@ -30,7 +32,7 @@ public class AIChatFragment extends Fragment {
 
     private MediaKind kind = MediaKind.MOVIE;
     private static final int MAX_WATCHLIST_IN_PROMPT = 150;
-    private static final int RECENT_WATCHED_IN_PROMPT = 20;
+    private static final int RECENT_WATCHED_IN_PROMPT = 15;
 
     private LinearLayout llMessages;
     private ScrollView scrollView;
@@ -93,7 +95,7 @@ public class AIChatFragment extends Fragment {
         final List<Map<String, String>> history = new ArrayList<>(messages);
         executor.execute(() -> {
             try {
-                String response = callGemini(history, buildUserContext());
+                String response = askApi(history);
                 handler.post(() -> {
                     progressBar.setVisibility(View.GONE);
                     btnSend.setEnabled(true);
@@ -111,42 +113,48 @@ public class AIChatFragment extends Fragment {
         });
     }
 
-    /** Watchlist + watch history summary, same idea as the desktop app's AI chat. Runs on the background thread. */
-    private String buildUserContext() {
+    /**
+     * Sends the conversation plus a summary of the watchlist and history to the CinemaTrack API, which builds the
+     * prompt and asks Gemini (same idea as the desktop app's AI chat). Runs on the background thread.
+     */
+    private String askApi(List<Map<String, String>> history) throws Exception {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return "";
+        if (user == null) throw new ApiClient.ApiException("sign_in_required", 401);
         String uid = user.getUid();
         final boolean tr = Lang.isTurkish();
-        final String noun = kind.isTv() ? "TV series" : "movies";
-        StringBuilder sb = new StringBuilder();
 
+        JSONObject body = new JSONObject();
+        body.put("kind", kind.key);
+        body.put("language", tr ? "tr" : "en");
+
+        JSONArray messages = new JSONArray();
+        for (Map<String, String> m : history) {
+            messages.put(new JSONObject().put("role", m.get("role")).put("text", m.get("text")));
+        }
+        body.put("messages", messages);
+
+        JSONArray watchlist = new JSONArray();
         try {
             QuerySnapshot wl = Tasks.await(FirestoreHelper.getWatchlist(uid, kind), 15, TimeUnit.SECONDS);
-            if (wl.isEmpty()) {
-                sb.append("\n\nUser has no ").append(noun).append(" in their watchlist yet.");
-            } else {
-                sb.append("\n\nUser's current watchlist:");
-                int n = 0;
-                for (DocumentSnapshot d : wl.getDocuments()) {
-                    if (n++ >= MAX_WATCHLIST_IN_PROMPT) break;
-                    sb.append("\n- ").append(Tmdb.title(d.getData(), tr));
-                    List<?> g = (List<?>) d.get("genres");
-                    if (g != null && !g.isEmpty()) {
-                        sb.append(" (").append(g.get(0));
-                        if (g.size() > 1) sb.append(", ").append(g.get(1));
-                        sb.append(")");
-                    }
-                    Number r = d.getDouble("vote_average");
-                    if (r != null && r.doubleValue() > 0) sb.append(String.format(Locale.US, " ★%.1f", r.doubleValue()));
-                }
+            int n = 0;
+            for (DocumentSnapshot d : wl.getDocuments()) {
+                if (n++ >= MAX_WATCHLIST_IN_PROMPT) break;
+                JSONObject item = new JSONObject().put("title", Tmdb.title(d.getData(), tr));
+                List<?> genres = (List<?>) d.get("genres");
+                if (genres != null) item.put("genres", new JSONArray(genres));
+                Double score = d.getDouble("vote_average");
+                if (score != null) item.put("vote_average", score);
+                watchlist.put(item);
             }
         } catch (Exception ignored) { /* answer without watchlist context */ }
+        body.put("watchlist", watchlist);
 
+        JSONObject stats = new JSONObject();
+        JSONArray recent = new JSONArray();
         try {
             QuerySnapshot log = Tasks.await(FirestoreHelper.getWatchLog(uid, kind), 15, TimeUnit.SECONDS);
             Map<String, Integer> genreCount = new HashMap<>();
             double ratingSum = 0; int ratingCount = 0;
-            StringBuilder recent = new StringBuilder();
             int shown = 0;
             for (DocumentSnapshot d : log.getDocuments()) {   // already newest first
                 Long rating = d.getLong("rating");
@@ -154,39 +162,25 @@ public class AIChatFragment extends Fragment {
                 List<?> genres = (List<?>) d.get("genres");
                 if (genres != null) for (Object g : genres) genreCount.merge(String.valueOf(g), 1, Integer::sum);
                 if (shown++ < RECENT_WATCHED_IN_PROMPT) {
-                    recent.append("\n- ").append(Tmdb.title(d.getData(), tr)).append(" — ").append(d.getString("watched_at"));
-                    if (rating != null && rating > 0) recent.append(", rated ").append(rating).append("/10");
+                    JSONObject entry = new JSONObject()
+                        .put("title", Tmdb.title(d.getData(), tr))
+                        .put("watched_at", d.getString("watched_at"));
+                    if (rating != null && rating > 0) entry.put("rating", rating);
+                    recent.put(entry);
                 }
             }
-            String fav = "unknown"; int best = 0;
+            String fav = null; int best = 0;
             for (Map.Entry<String, Integer> e : genreCount.entrySet()) {
                 if (e.getValue() > best) { best = e.getValue(); fav = Tmdb.genre(e.getKey(), tr); }
             }
-            sb.append("\n\nUser's watch stats: ").append(log.size()).append(" ").append(noun).append(" watched total, favorite genre: ")
-              .append(fav).append(", average rating: ")
-              .append(ratingCount > 0 ? String.format(Locale.US, "%.1f", ratingSum / ratingCount) : "N/A").append(".");
-            if (recent.length() > 0) sb.append("\nRecently watched:").append(recent);
+            stats.put("total_watched", log.size());
+            if (fav != null) stats.put("favorite_genre", fav);
+            if (ratingCount > 0) stats.put("avg_rating", ratingSum / ratingCount);
         } catch (Exception ignored) { /* answer without history context */ }
+        body.put("stats", stats);
+        body.put("recent", recent);
 
-        return sb.toString();
-    }
-
-    private String callGemini(List<Map<String, String>> history, String userContext) throws Exception {
-        StringBuilder conversation = new StringBuilder();
-        for (Map<String, String> msg : history) {
-            conversation.append("user".equals(msg.get("role")) ? "User: " : "Assistant: ")
-                .append(msg.get("text")).append("\n");
-        }
-
-        String noun = kind.isTv() ? "TV series" : "movies";
-        String prompt = "You are " + (kind.isTv() ? "DiziTrack" : "CinemaTrack") + " AI, a friendly " +
-            (kind.isTv() ? "TV series" : "movie") + " assistant. You have access to the user's watchlist " +
-            "and stats below. Help them discover " + noun + ", pick from their watchlist, or answer questions about " +
-            "their watch history. Be concise and friendly. " +
-            (Lang.isTurkish() ? "Always answer in Turkish." : "Answer in English.") + userContext +
-            "\n\nConversation:\n" + conversation + "\nAssistant:";
-
-        return GeminiClient.generate(http, prompt, 2048, 0.9, false);
+        return ApiClient.post(http, "/v1/ai/chat", body).getString("text");
     }
 
     private void addBubble(String text, boolean isUser) {

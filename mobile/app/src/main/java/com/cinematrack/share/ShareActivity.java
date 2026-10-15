@@ -22,11 +22,6 @@ import okhttp3.*;
 /** "Share to CinemaTrack" from Instagram: finds the movie or series in the reel and adds it to the right list. */
 public class ShareActivity extends AppCompatActivity {
 
-    // RapidAPI "Post Info" (fallback when the page itself gives no caption): GET /api/v1/posts/info?code=<shortcode>
-    // (the old "/v1/post_info?url=" path no longer exists on this host and returned 404)
-    private static final String RAPID_PATH = "/api/v1/posts/info?code=";
-    private static final Pattern POST_CODE = Pattern.compile(
-        "instagram\\.com/(?:[^/?#]+/)?(?:reels?|p|tv)/([A-Za-z0-9_-]+)", Pattern.CASE_INSENSITIVE);
     // Instagram only serves og: meta tags (which contain the caption) to link-preview crawlers.
     private static final String CRAWLER_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
@@ -116,14 +111,9 @@ public class ShareActivity extends AppCompatActivity {
             handler.post(() -> tvStatus.setText(R.string.share_caption_found));
 
             try {
-                String prompt = "What movie or TV series is this Instagram reel about?\n\n"
-                    + "Caption: " + caption + "\n\n"
-                    + "Give your top 3 guesses as a JSON array of exact titles. "
-                    + "Reply ONLY with: [\"Title 1\", \"Title 2\", \"Title 3\"] "
-                    + "or [\"UNKNOWN\"] if you can't tell.";
-
-                String geminiResp = GeminiClient.generate(geminiHttp, prompt, 256, 0.2, false);
-                JSONArray titles = parseTitles(geminiResp);
+                // The CinemaTrack API asks Gemini (up to 3 guesses, "UNKNOWN" already filtered out)
+                JSONArray titles = ApiClient.post(geminiHttp, "/v1/ai/titles", new JSONObject().put("caption", caption))
+                    .getJSONArray("titles");
 
                 List<Map<String, Object>> movies = new ArrayList<>();
                 Set<String> seen = new HashSet<>();
@@ -158,7 +148,7 @@ public class ShareActivity extends AppCompatActivity {
     private String fetchCaption(String reelUrl) {
         String caption = fetchCaptionFromPage(reelUrl);
         if (!caption.isEmpty()) return caption;
-        return fetchCaptionFromRapidApi(reelUrl);
+        return fetchCaptionFromApi(reelUrl);
     }
 
     private String fetchCaptionFromPage(String reelUrl) {
@@ -182,23 +172,14 @@ public class ShareActivity extends AppCompatActivity {
         }
     }
 
-    private String fetchCaptionFromRapidApi(String reelUrl) {
+    /**
+     * The fallback: the CinemaTrack API asks RapidAPI. That plan is tiny (100 requests a month for everybody),
+     * so the API caches captions and limits each person; when the limit is hit this just returns "".
+     */
+    private String fetchCaptionFromApi(String reelUrl) {
         try {
-            Matcher code = POST_CODE.matcher(reelUrl);
-            if (!code.find()) return "";
-            Request req = new Request.Builder()
-                .url("https://" + FirestoreHelper.RAPID_HOST + RAPID_PATH + code.group(1))
-                .addHeader("x-rapidapi-key", FirestoreHelper.RAPID_KEY)
-                .addHeader("x-rapidapi-host", FirestoreHelper.RAPID_HOST)
-                .build();
-            try (Response resp = http.newCall(req).execute()) {
-                ResponseBody body = resp.body();
-                if (!resp.isSuccessful() || body == null) return "";
-                JSONObject data = new JSONObject(body.string()).optJSONObject("data");
-                if (data == null) return "";
-                JSONObject cap = data.optJSONObject("caption");
-                return cap == null ? "" : cap.optString("text", "");
-            }
+            return ApiClient.post(http, "/v1/instagram/caption", new JSONObject().put("url", reelUrl))
+                .optString("caption", "");
         } catch (Exception e) {
             return "";
         }
@@ -216,13 +197,6 @@ public class ShareActivity extends AppCompatActivity {
             if (c.find()) return Html.fromHtml(c.group(1), Html.FROM_HTML_MODE_LEGACY).toString().trim();
         }
         return "";
-    }
-
-    private JSONArray parseTitles(String geminiResp) throws Exception {
-        int start = geminiResp.indexOf('[');
-        int end = geminiResp.lastIndexOf(']');
-        if (start < 0 || end <= start) throw new IOException("unexpected answer");
-        return new JSONArray(geminiResp.substring(start, end + 1));
     }
 
     private String shortMessage(Exception e) {
