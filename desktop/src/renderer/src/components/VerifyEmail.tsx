@@ -67,8 +67,11 @@ export default function VerifyEmail({ user, onVerified }: Props) {
           sentTo ? (
             <div className="space-y-4">
               <p className="text-sm text-zinc-300">{t('We sent a confirmation link to {0}.', sentTo)}</p>
-              <p className="text-xs text-zinc-400">{t('Open it, then sign in again with that email. Your lists stay exactly as they are.')}</p>
+              <p className="text-xs text-zinc-400">{t('Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are.')}</p>
               <button onClick={logout} className={primaryBtn}>{t('Sign out')}</button>
+              <button onClick={() => setSentTo(null)} className="w-full text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                {t('Did not arrive? Try an email address again')}
+              </button>
             </div>
           ) : (
             <div className="space-y-4">

@@ -147,11 +147,12 @@ public class LoginActivity extends AppCompatActivity {
                 tvTitle.setText(R.string.login_upgrade_title);
                 body = getString(R.string.login_upgrade_sent, sentTo);
                 btnPrimary.setText(R.string.sign_out);
+                btnSecondary.setText(R.string.login_try_another);
                 break;
         }
         tvBody.setText(body);
         tvBody.setVisibility(body == null ? View.GONE : View.VISIBLE);
-        btnSecondary.setVisibility(m == Mode.LOGIN || m == Mode.VERIFY ? View.VISIBLE : View.GONE);
+        btnSecondary.setVisibility(m == Mode.LOGIN || m == Mode.VERIFY || m == Mode.UPGRADE_SENT ? View.VISIBLE : View.GONE);
         btnTertiary.setVisibility(m == Mode.UPGRADE_SENT ? View.GONE : View.VISIBLE);
     }
 
@@ -169,6 +170,7 @@ public class LoginActivity extends AppCompatActivity {
     private void onSecondary() {
         if (mode == Mode.LOGIN) setMode(Mode.RESET);
         else if (mode == Mode.VERIFY) doResend();
+        else if (mode == Mode.UPGRADE_SENT) setMode(Mode.UPGRADE);   // the mail did not arrive: try an address again
     }
 
     private void onTertiary() {

@@ -45,7 +45,8 @@
     <string name="login_upgrade_title">Hesabını yükselt</string>
     <string name="login_upgrade_body">CinemaTrack artık gerçek e-posta adresleri kullanıyor, böylece unuttuğun şifreyi sıfırlayabilirsin. Adresini gir, bir onay bağlantısı gönderelim. Listelerin olduğu gibi kalır.</string>
     <string name="login_upgrade_send">Onay bağlantısı gönder</string>
-    <string name="login_upgrade_sent">%s adresine bir onay bağlantısı gönderdik. Bağlantıyı aç, sonra o e-posta ile tekrar giriş yap. Listelerin olduğu gibi kalır.</string>
+    <string name="login_upgrade_sent">%s adresine bir onay bağlantısı gönderdik. Bağlantıyı aç (istenmeyen klasörüne de bak), sonra o e-posta ile tekrar giriş yap. Listelerin olduğu gibi kalır.</string>
+    <string name="login_try_another">Gelmedi mi? E-posta adresini tekrar dene</string>
     <string name="cancel">İptal</string>
     <string name="confirm">Onayla</string>
     <string name="remove">Kaldır</string>
