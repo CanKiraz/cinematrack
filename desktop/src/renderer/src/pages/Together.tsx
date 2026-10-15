@@ -10,6 +10,7 @@ import {
   TogetherSession, ResolvedMovie
 } from '../services/together'
 import { syncAddMovie } from '../services/sync'
+import { apiCodeText } from '../services/apiError'
 import { Kind, Movie } from '../types'
 import { useI18n, titleOf, overviewOf, genreLabel } from '../services/i18n'
 
@@ -402,7 +403,7 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
         {/* No result */}
         {session?.status === 'resolved' && !session.result && (
           <div className="p-5 bg-zinc-800 border border-zinc-700 rounded-2xl text-center">
-            <p className="text-zinc-400 text-sm">{t('No match found. Try different preferences.')}</p>
+            <p className="text-zinc-400 text-sm">{apiCodeText(session.error, t) ?? t('No match found. Try different preferences.')}</p>
             <button onClick={() => handleVote('again')} className="mt-3 text-xs text-blue-400 hover:text-blue-300 cursor-pointer">{t('Search again')}</button>
           </div>
         )}

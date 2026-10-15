@@ -32,7 +32,11 @@ export default function AuthModal({ onSuccess }: Props) {
       case 'auth/weak-password':        return t('Password must be at least {0} characters.', MIN_PASSWORD)
       case 'auth/too-many-requests':    return t('Too many attempts. Try again later.')
       case 'auth/network-request-failed': return t('Network error. Check your connection.')
-      default:                          return t('Something went wrong. Try again.')
+      default: {
+        const code = (e as { code?: string }).code
+        console.error('sign-in step failed:', e)
+        return t('Something went wrong. Try again.') + (code ? ` (${code})` : '')
+      }
     }
   }
 

@@ -66,6 +66,8 @@ declare global {
     api: {
       getConfig(key: string): Promise<string | null>
       setConfig(key: string, value: string): Promise<void>
+      setAuthToken(token: string | null): Promise<void>
+      onAuthRefreshRequest(callback: () => void): () => void
       searchMovies(query: string, kind?: Kind, language?: string): Promise<Movie[]>
       getMovie(tmdbId: number, kind?: Kind): Promise<Movie>
       getWatchProviders(tmdbId: number, kind?: Kind): Promise<unknown>

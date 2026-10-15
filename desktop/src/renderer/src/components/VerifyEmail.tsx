@@ -27,10 +27,12 @@ export default function VerifyEmail({ user, onVerified }: Props) {
     try { await fn() }
     catch (e) {
       const code = (e as { code?: string }).code
+      console.error('account step failed:', e)
       if (code === 'auth/email-already-in-use') setError(t('That email is already registered.'))
       else if (code === 'auth/invalid-email') setError(t('Enter a valid email address.'))
       else if (code === 'auth/too-many-requests') setError(t('Too many attempts. Try again later.'))
-      else setError(t('Something went wrong. Try again.'))
+      else if (code === 'auth/requires-recent-login') setError(t('For security, sign out, sign in again, then try this once more.'))
+      else setError(t('Something went wrong. Try again.') + (code ? ` (${code})` : ''))
     } finally { setBusy(false) }
   }
 

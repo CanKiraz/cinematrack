@@ -3,6 +3,7 @@ import MovieDetailModal from '../components/MovieDetailModal'
 import { ChatMessage, Kind, Movie, WatchlistEntry } from '../types'
 import { syncUid } from '../services/auth'
 import { syncAddMovie } from '../services/sync'
+import { apiErrorText } from '../services/apiError'
 import { useI18n, titleOf, overviewOf, genreLabel } from '../services/i18n'
 
 let counter = 0
@@ -99,8 +100,9 @@ export default function AIChat({ kind, messages, setMessages }: Props) {
       ))
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('Unknown error')
+      const content = apiErrorText(err, t) ?? t('Something went wrong: {0}', msg)
       setMessages(prev => prev.map(m =>
-        m.id === thinkingMsg.id ? { ...m, content: t('Something went wrong: {0}', msg), loading: false } : m
+        m.id === thinkingMsg.id ? { ...m, content, loading: false } : m
       ))
     } finally {
       setLoading(false)

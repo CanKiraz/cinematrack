@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { onIdTokenChanged } from 'firebase/auth'
+import { onIdTokenChanged, User } from 'firebase/auth'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import Sidebar from './components/Sidebar'
@@ -8,8 +8,10 @@ import Stats from './pages/Stats'
 import AIChat from './pages/AIChat'
 import { TogetherWithBoundary } from './pages/Together'
 import SettingsModal from './components/SettingsModal'
+import AuthModal from './components/AuthModal'
+import VerifyEmail from './components/VerifyEmail'
 import { Page, ChatMessage, Movie, Kind } from './types'
-import { TogetherSession } from './services/together'
+import { TogetherSession, cleanupStaleSessions } from './services/together'
 import { notifyDataChanged } from './services/events'
 import { backfillTurkish } from './services/localization'
 import { useI18n } from './services/i18n'
@@ -24,7 +26,39 @@ function initialKind(): Kind {
   try { return localStorage.getItem(KIND_KEY) === 'tv' ? 'tv' : 'movie' } catch { return 'movie' }
 }
 
+/**
+ * Everything in the app (search, AI, sync, Watch Together) goes through the CinemaTrack API and the shared
+ * Firebase project, which need a signed-in user with a verified email. So that is the front door.
+ * It also hands the Firebase ID token to the main process, which makes the API calls.
+ */
 export default function App() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [, rerender] = useState(0)
+
+  useEffect(() => {
+    const stop = onIdTokenChanged(auth, async u => {
+      setUser(u)
+      setLoaded(true)
+      rerender(n => n + 1)   // `emailVerified` changes on the same user object after a reload
+      await window.api.setAuthToken(u?.emailVerified ? await u.getIdToken() : null).catch(() => {})
+    })
+    // The main process asks for a fresh token when the one it holds is about to expire
+    const stopRefresh = window.api.onAuthRefreshRequest(async () => {
+      const u = auth.currentUser
+      try { await window.api.setAuthToken(u?.emailVerified ? await u.getIdToken(true) : null) } catch { /* offline */ }
+    })
+    return () => { stop(); stopRefresh() }
+  }, [])
+
+  const shell = 'h-screen bg-zinc-950 text-zinc-100 overflow-y-auto select-none'
+  if (!loaded) return <div className={`${shell} flex items-center justify-center text-zinc-500 text-sm`}>…</div>
+  if (!user) return <div className={shell}><AuthModal onSuccess={() => {}} /></div>
+  if (!user.emailVerified) return <div className={shell}><VerifyEmail user={user} onVerified={() => rerender(n => n + 1)} /></div>
+  return <MainApp />
+}
+
+function MainApp() {
   const { t } = useI18n()
   const [page, setPage] = useState<Page>('watchlist')
   const [kind, setKindState] = useState<Kind>(initialKind)   // CinemaTrack (movies) or DiziTrack (series)
@@ -68,6 +102,7 @@ export default function App() {
       }
       if (syncedUidRef.current === user.uid) return   // hourly token refresh: sync is already running
       syncedUidRef.current = user.uid
+      void cleanupStaleSessions(user.uid)   // forgotten Watch Together sessions (see together.ts)
 
       // ── Step 1: One-time migration of existing SQLite data to Firestore (movies) ──
       if (!migratingRef.current) {
@@ -237,7 +272,7 @@ export default function App() {
         )}
       </main>
       {showSettings && (
-        <SettingsModal isFirstRun={false} onClose={() => setShowSettings(false)} />
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
   )

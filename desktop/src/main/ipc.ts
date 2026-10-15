@@ -1,4 +1,4 @@
-import { ipcMain, net } from 'electron'
+import { ipcMain } from 'electron'
 import {
   addToWatchlist, removeFromWatchlist, getWatchlist, upsertMovie,
   addWatchLog, getWatchLog, getWatchLogByDate, getStats,
@@ -6,24 +6,7 @@ import {
   isWatched, removeWatchLogEntry, addRemoteWatchLog, removeWatchLogByRemoteId,
   Kind
 } from './database'
-
-// ── Electron net.fetch — never blocked by Windows Firewall ───────────────────
-
-async function netFetch(url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }): Promise<unknown> {
-  const res = await net.fetch(url, options)
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-  return res.json()
-}
-
-type GeminiTextResponse = { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-
-// ── Default API keys ──────────────────────────────────────────────────────────
-// Come from .env at build time (MAIN_VITE_*, not in git). Keys saved in Settings take priority.
-const TMDB_KEY_DEFAULT = import.meta.env.MAIN_VITE_TMDB_KEY ?? ''
-const GEMINI_KEY_DEFAULT = import.meta.env.MAIN_VITE_GEMINI_KEY ?? ''
-
-function getTmdbKey(): string { return getConfig('tmdb_api_key') || TMDB_KEY_DEFAULT }
-function getGeminiKey(): string { return getConfig('gemini_api_key') || GEMINI_KEY_DEFAULT }
+import { api, setAuthToken } from './api'
 
 // ── TMDB ──────────────────────────────────────────────────────────────────────
 // CinemaTrack = movies ('movie'), DiziTrack = TV series ('tv'). The two differ only in a few field names.
@@ -44,10 +27,9 @@ interface TmdbDetail extends TmdbItem {
 
 function kindOf(kind?: string): Kind { return kind === 'tv' ? 'tv' : 'movie' }
 
+// `path` is the TMDB path ("/search/movie?query=..."); the CinemaTrack API adds the key and enforces the limits
 async function tmdbFetch(path: string): Promise<unknown> {
-  const key = getTmdbKey()
-  const url = `https://api.themoviedb.org/3${path}${path.includes('?') ? '&' : '?'}api_key=${key}`
-  return netFetch(url)
+  return api(`/v1/tmdb${path}`)
 }
 
 function mapItem(m: TmdbItem, kind: Kind) {
@@ -101,6 +83,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:get', (_e, key: string) => getConfig(key))
   ipcMain.handle('config:set', (_e, key: string, value: string) => setConfig(key, value))
+
+  // The signed-in user's Firebase ID token, which the renderer pushes here for the CinemaTrack API calls
+  ipcMain.handle('auth:setToken', (_e, token: string | null) => setAuthToken(typeof token === 'string' ? token : null))
 
   // TMDB (via net.fetch — no firewall issues)
   ipcMain.handle('tmdb:search', async (_e, query: string, kind?: string, language?: string) => {
@@ -174,91 +159,38 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('watchlog:getByDate', (_e, kind?: string) => getWatchLogByDate(kindOf(kind)))
 
-  // Together: let Gemini pick (net.fetch — not blocked by the firewall)
+  // Together: the CinemaTrack API builds the prompt, asks Gemini, and returns a pick that suits both people
   ipcMain.handle('together:resolve', async (_e, data: {
     kind?: string
-    geminiPrompt: string
+    language?: string
+    users: unknown[]               // [creator, partner]: { name, random, prompt, watched, watchlist }
     creatorUsername: string
     partnerUsername: string
     creatorList: MovieInput[]
     partnerList: MovieInput[]
   }) => {
     const k = kindOf(data.kind)
-    console.log('=== TOGETHER RESOLVE — IPC START ===', k)
 
-    const key = getGeminiKey()
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
+    const answer = await api('/v1/ai/together', {
+      method: 'POST',
+      body: { kind: k, language: lang(data.language) === 'tr-TR' ? 'tr' : 'en', users: data.users }
+    }) as { pick: { title: string; reasoning: string; source: 'both' | 'first' | 'second' | 'gemini' } | null }
 
-    let response: GeminiTextResponse | null = null
-
-    // Retry up to 3 times for 503 errors
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        response = await netFetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: data.geminiPrompt }] }],
-            generationConfig: { maxOutputTokens: 8192, temperature: 0.4 }
-          })
-        }) as GeminiTextResponse
-        break // success
-      } catch (e) {
-        const msg = String(e)
-        if (msg.includes('503') && attempt < 3) {
-          console.log(`Gemini 503 — retrying in ${attempt * 2}s (attempt ${attempt}/3)`)
-          await new Promise(r => setTimeout(r, attempt * 2000))
-        } else {
-          console.error('GEMINI FETCH ERROR:', e)
-          return null
-        }
-      }
-    }
-
-    if (!response) return null
-
-    const raw = (response.candidates?.[0]?.content?.parts ?? []).map(p => p.text ?? '').join('').trim()
-    console.log('GEMINI RAW TEXT:\n', raw)
-
-    // Parse the JSON format: { recommended_movie: { title, year, genre, reasoning, source } }
-    let parsed: {
-      recommended_movie: {
-        title: string
-        year: string
-        genre: string
-        reasoning: string
-        source: string
-      }
-    } | null = null
-
-    try {
-      parsed = JSON.parse(raw.replace(/```json|```/g, '').trim())
-      console.log('PARSED RESULT:', JSON.stringify(parsed, null, 2))
-    } catch (e) {
-      console.error('JSON PARSE ERROR:', e, '\nRaw was:', raw)
-      return null
-    }
-
-    const rec = parsed?.recommended_movie
-    if (!rec?.title) {
-      console.log('No title in response — returning null')
-      return null
-    }
-
+    const rec = answer.pick
+    if (!rec?.title) return null
     const reasoning = rec.reasoning || ''
 
-    // Map source to actual usernames
+    // "first" / "second" follow the order the users were sent: creator, then partner
     type SourceType = 'Both Watchlists' | 'Host Watchlist' | 'User2 Watchlist' | 'Gemini Recommendation'
     let source: SourceType = 'Gemini Recommendation'
     let sourceLabel = 'Gemini Recommendation'
-
-    if (rec.source === 'Both Watchlists') {
+    if (rec.source === 'both') {
       source = 'Both Watchlists'
-      sourceLabel = `In both watchlists`
-    } else if (rec.source.includes(data.creatorUsername)) {
+      sourceLabel = 'In both watchlists'
+    } else if (rec.source === 'first') {
       source = 'Host Watchlist'
       sourceLabel = `From ${data.creatorUsername}'s watchlist`
-    } else if (rec.source.includes(data.partnerUsername)) {
+    } else if (rec.source === 'second') {
       source = 'User2 Watchlist'
       sourceLabel = `From ${data.partnerUsername}'s watchlist`
     }
@@ -267,20 +199,12 @@ export function registerIpcHandlers(): void {
     const allMovies = [...data.creatorList, ...data.partnerList]
     const titleLower = rec.title.trim().toLowerCase()
     const found = allMovies.find(m => (m.title || '').toLowerCase() === titleLower)
+    if (found) return { ...found, source, sourceLabel, reasoning }
 
-    if (found) {
-      console.log('Found in watchlist:', found.title)
-      return { ...found, source, sourceLabel, reasoning }
-    }
-
-    // Not in watchlists — search TMDB
-    console.log('Not in watchlists, searching TMDB for:', rec.title)
+    // Not in the watchlists: look it up on TMDB
     const tmdbSearch = await tmdbFetch(`/search/${k}?query=${encodeURIComponent(rec.title)}&language=en-US`) as { results: TmdbItem[] }
     const m = tmdbSearch.results?.[0]
-    if (!m) {
-      console.log('Not found on TMDB either')
-      return null
-    }
+    if (!m) return null
 
     const detail = await tmdbFetch(`/${k}/${m.id}?language=en-US&append_to_response=translations`) as TmdbDetail
     return {
@@ -295,68 +219,35 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('stats:get', (_e, kind?: string) => getStats(kindOf(kind)))
   ipcMain.handle('stats:getDetailed', (_e, kind?: string) => getDetailedStats(kindOf(kind)))
 
-  // AI Chat (via net.fetch — no firewall issues)
+  // AI Chat: the CinemaTrack API builds the prompt and asks Gemini; titles in the answer are then looked up on TMDB
   ipcMain.handle('ai:chat', async (_e, messages: { role: string; parts: { text: string }[] }[], watchlistData?: unknown[], statsData?: unknown, kind?: string, language?: string) => {
     const k = kindOf(kind)
-    const noun = k === 'tv' ? 'TV series' : 'movies'
     const turkish = language === 'tr-TR'
     const suggestedMovies: unknown[] = []
 
-    // Build watchlist context string
-    let watchlistContext = ''
-    if (watchlistData && Array.isArray(watchlistData) && watchlistData.length > 0) {
-      const titles = (watchlistData as { title: string; title_tr?: string | null; genres?: string[]; vote_average?: number }[])
-        .map(m => `- ${turkish && m.title_tr ? m.title_tr : m.title}${m.genres?.length ? ` (${m.genres.slice(0,2).join(', ')})` : ''}${m.vote_average ? ` ★${Number(m.vote_average).toFixed(1)}` : ''}`)
-        .join('\n')
-      watchlistContext = `\n\nUser's current watchlist:\n${titles}`
-    } else {
-      watchlistContext = `\n\nUser has no ${noun} in their watchlist yet.`
-    }
+    const stats = (statsData ?? {}) as { total_watched?: number; favorite_genre?: string | null; avg_rating?: number | null }
+    const watchlist = (Array.isArray(watchlistData) ? watchlistData : []) as
+      { title: string; title_tr?: string | null; genres?: string[]; vote_average?: number }[]
 
-    // Build stats context
-    let statsContext = ''
-    if (statsData) {
-      const s = statsData as { total_watched?: number; favorite_genre?: string; avg_rating?: number }
-      statsContext = `\n\nUser's watch stats: ${s.total_watched ?? 0} ${noun} watched total, favorite genre: ${s.favorite_genre ?? 'unknown'}, average rating: ${s.avg_rating ? Number(s.avg_rating).toFixed(1) : 'N/A'}.`
-    }
-
-    // Build conversation history
-    const history = messages.map(m =>
-      `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.parts.map(p => p.text).join(' ')}`
-    ).join('\n')
-
-    const brand = k === 'tv' ? 'DiziTrack' : 'CinemaTrack'
-    const systemPrompt = `You are ${brand} AI, a friendly ${k === 'tv' ? 'TV series' : 'movie'} assistant. You have access to the user's watchlist and stats below. Help them discover ${noun}, pick from their watchlist, or answer questions about their watch history. Be concise and friendly. ${turkish ? 'Always answer in Turkish.' : 'Answer in English.'}${watchlistContext}${statsContext}`
-
-    const fullPrompt = `${systemPrompt}\n\nConversation:\n${history}\nAssistant:`
-
-    const key = getGeminiKey()
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
-
-    const body = {
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-      // Thinking tokens count against maxOutputTokens on gemini-2.5-flash: switch thinking off for chat
-      generationConfig: { temperature: 0.9, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } }
-    }
-
-    // Gemini answers 503 ("high demand") now and then: retry a couple of times
-    let response: GeminiTextResponse | null = null
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        response = await netFetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }) as GeminiTextResponse
-        break
-      } catch (e) {
-        const retryable = String(e).includes('503') || String(e).includes('429')
-        if (!retryable || attempt === 3) throw e
-        await new Promise(r => setTimeout(r, attempt * 1500))
+    const reply = await api('/v1/ai/chat', {
+      method: 'POST',
+      body: {
+        kind: k,
+        language: turkish ? 'tr' : 'en',
+        messages: messages.map(m => ({
+          role: m.role === 'user' ? 'user' : 'assistant',
+          text: m.parts.map(p => p.text).join(' ')
+        })),
+        watchlist: watchlist.slice(0, 100).map(m => ({
+          title: turkish && m.title_tr ? m.title_tr : m.title,
+          genres: m.genres,
+          vote_average: m.vote_average
+        })),
+        stats: { total_watched: stats.total_watched, favorite_genre: stats.favorite_genre, avg_rating: stats.avg_rating }
       }
-    }
+    }) as { text: string }
 
-    const text = (response?.candidates?.[0]?.content?.parts ?? []).map(p => p.text ?? '').join('').trim()
+    const text = reply.text.trim()
       || (turkish ? 'Üzgünüm, bir cevap üretemedim. Lütfen tekrar dene.' : 'Sorry, I could not come up with an answer. Please try again.')
 
     // Extract titles and search TMDB for them

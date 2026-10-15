@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Kind, Movie } from '../types'
+import { apiErrorCode } from './apiError'
 
 export type SessionStatus =
   | 'waiting'
@@ -26,6 +27,7 @@ export interface TogetherSession {
   creatorIsRandom: boolean
   partnerIsRandom: boolean
   result: ResolvedMovie | null
+  error?: string | null  // why there is no result: an API error code such as "rate_limited" (see apiError.ts)
   createdAt: string
   creatorVote: 'ok' | 'again' | null
   partnerVote: 'ok' | 'again' | null
@@ -196,6 +198,7 @@ export async function submitVote(session: TogetherSession, userId: string, vote:
     await updateDoc(doc(db, 'sessions', session.id), {
       status: 'both_joined',
       result: null,
+      error: null,
       creatorPreference: null,
       partnerPreference: null,
       creatorIsRandom: false,
@@ -212,14 +215,15 @@ export async function submitVote(session: TogetherSession, userId: string, vote:
   }
 }
 
-function formatMovieList(movies: Movie[]): string {
-  if (!movies.length) return 'Empty'
-  return movies.map(m =>
-    `- ${m.title} (${m.genres?.slice(0, 2).join(', ') || 'Unknown'})${m.vote_average ? ` ★${Number(m.vote_average).toFixed(1)}` : ''}${m.release_date ? ` [${m.release_date.substring(0, 4)}]` : ''}`
-  ).join('\n')
+/** What the AI gets to see about a title: nothing but the facts needed to judge taste. */
+function toAiItem(m: Movie & { rating?: number | null }) {
+  return {
+    title: m.title, genres: m.genres, vote_average: m.vote_average,
+    release_date: m.release_date, rating: m.rating ?? null
+  }
 }
 
-// ── Main resolution logic — Gemini based ─────────────────────────────────────
+// ── Main resolution logic — the CinemaTrack API asks Gemini ──────────────────
 
 async function resolveSession(
   session: TogetherSession,
@@ -240,99 +244,59 @@ async function resolveSession(
     const { watchlist: creatorWatchlist, watched: creatorWatched } = creator
     const { watchlist: partnerWatchlist, watched: partnerWatched } = partner
 
-    const hostChoice = creatorRandom ? 'Random' : `Prompt: ${creatorPref}`
-    const user2Choice = partnerRandom ? 'Random' : `Prompt: ${partnerPref}`
-
-    let prompt = `[TASK DESCRIPTION AND ROLE]
-You are an expert movie assistant and recommendation engine working for the "Watch Together" feature of the "Cinematrack" app. Your goal is to analyze the watch histories (Watched), watchlists (Watchlist), and current preferences of two users (${session.creatorUsername} and ${session.partnerUsername}) to select the absolute best *single movie* that will satisfy them both.
-When making your decision, you MUST STRICTLY FOLLOW THE RULES BELOW:
-
-CASE 1: If both users selected "Random" (Pick from Watchlist):
-1. Priority: Select a movie that is mutually present in BOTH users' Watchlists.
-2. Alternative: If there is no common movie, select a movie present in ONLY ONE user's Watchlist, but ensure it strongly aligns with the OTHER user's taste by analyzing their previously watched movies (genre, year, rating).
-3. Last Resort: If there are no suitable movies in either list, recommend a brand new movie that both users will love, based on a combined analysis of both their watch histories.
-
-CASE 2: If one user selected "Random" and the other selected "Prompt" (Description):
-1. Priority: Select a movie that is mutually present in BOTH users' Watchlists AND matches the provided Prompt.
-2. Alternative: If not available, select a movie from the "Random" selector's Watchlist that matches the provided Prompt.
-3. Last Resort: If there are no suitable movies in the lists, analyze both users' watch histories and recommend a brand new movie that STRICTLY MATCHES THE PROMPT.
-
-CASE 3: If both users entered a "Prompt" (Description):
-1. Priority: Select a movie that is mutually present in BOTH users' Watchlists AND simultaneously satisfies both Prompts.
-2. Alternative: If not available, select a movie from EITHER user's Watchlist that satisfies both Prompts.
-3. Last Resort: If not available in the lists, recommend a brand new movie that STRICTLY SATISFIES BOTH PROMPTS, taking both users' watch histories into account.
-
-[INDEPENDENT RECOMMENDATION RULES (OUTSIDE WATCHLIST)]
-If you cannot find a movie from the users' lists and must recommend one from your own database (as a Last Resort), adhere to these rules:
-- The movie must be popular and widely acclaimed by general audiences.
-- It must have a high audience/critic score (e.g., IMDb 7.0+).
-- Avoid obscure or highly niche movies unless the users specifically request "experimental, obscure, indie" etc. in their prompts.
-
----
-[USER DATA]
-<${session.creatorUsername}_DATA>
-Previously Watched:
-${formatMovieList(creatorWatched)}
-Watchlist:
-${formatMovieList(creatorWatchlist)}
-Choice: ${hostChoice}
-</${session.creatorUsername}_DATA>
-
-<${session.partnerUsername}_DATA>
-Previously Watched:
-${formatMovieList(partnerWatched)}
-Watchlist:
-${formatMovieList(partnerWatchlist)}
-Choice: ${user2Choice}
-</${session.partnerUsername}_DATA>
-
----
-[RETURN MESSAGE FORMAT AND CLOSING]
-For the application to process this data smoothly, you MUST return your response ONLY in the following JSON format. Do not use any extra text, explanations, or markdown blocks outside of the JSON. ${language === 'tr-TR' ? 'Write the "reasoning" text in Turkish.' : 'Write the "reasoning" text in English.'} Keep "title" in its original/English form.
-{
-  "recommended_movie": {
-    "title": "Movie Title",
-    "year": "Release Year",
-    "genre": "Genres",
-    "reasoning": "A short, engaging explanation addressed to the users detailing why this movie was chosen and how it matches their tastes or prompts.",
-    "source": "Both Watchlists | ${session.creatorUsername} Watchlist | ${session.partnerUsername} Watchlist | Gemini Recommendation"
-  }
-}`
-
-    if (kind === 'tv') {
-      // same rules, but for TV series (the JSON key stays as it is)
-      prompt = prompt.replace(/recommended_movie/g, '@@KEY@@')
-        .replace(/movies/g, 'TV series').replace(/Movie Title/g, 'Series Title')
-        .replace(/movie/g, 'TV series').replace(/Movie/g, 'TV series')
-        .replace(/@@KEY@@/g, 'recommended_movie')
-    }
-
-    console.log('=== FULL PROMPT SENT TO GEMINI ===\n', prompt)
+    // The CinemaTrack API builds the prompt: we only send data. Notes never get this far: the summaries
+    // that were published for the session hold titles, genres and ratings only.
+    const person = (name: string, random: boolean, pref: string, watched: Movie[], watchlist: Movie[]) => ({
+      name, random, prompt: random ? '' : pref,
+      watched: watched.map(toAiItem),
+      watchlist: watchlist.map(toAiItem)
+    })
 
     const result = await window.api.togetherResolve({
       kind,
-      geminiPrompt: prompt,
+      language,
+      users: [
+        person(session.creatorUsername, creatorRandom, creatorPref, creatorWatched, creatorWatchlist),
+        person(session.partnerUsername ?? 'Partner', partnerRandom, partnerPref, partnerWatched, partnerWatchlist)
+      ],
       creatorUsername: session.creatorUsername,
       partnerUsername: session.partnerUsername,
       creatorList: creatorWatchlist,
       partnerList: partnerWatchlist
     })
 
-    console.log('=== RESULT FROM IPC ===\n', JSON.stringify(result, null, 2))
-
     await writeResult(session.id, result as ResolvedMovie | null)
   } catch (e) {
     console.error('resolveSession error:', e)
-    await writeResult(session.id, null)
+    // Tell both people why there is no result (for instance "daily limit reached") instead of just "no match"
+    await writeResult(session.id, null, apiErrorCode(e))
   }
 }
 
-async function writeResult(sessionId: string, result: ResolvedMovie | null): Promise<void> {
-  await updateDoc(doc(db, 'sessions', sessionId), { result, status: 'resolved' })
+async function writeResult(sessionId: string, result: ResolvedMovie | null, error: string | null = null): Promise<void> {
+  await updateDoc(doc(db, 'sessions', sessionId), { result, status: 'resolved', error })
 }
 
 export function listenSession(sid: string, cb: (s: TogetherSession | null) => void): () => void {
   return onSnapshot(doc(db, 'sessions', sid), snap => cb(snap.exists() ? snap.data() as TogetherSession : null))
+}
+
+/**
+ * Removes this user's abandoned sessions (and the summaries inside them) once they are past their `expireAt`.
+ * Firestore's own TTL feature needs a paid plan, so the apps tidy up after themselves when they start.
+ */
+export async function cleanupStaleSessions(uid: string): Promise<void> {
+  try {
+    const [asCreator, asPartner] = await Promise.all([
+      getDocs(query(collection(db, 'sessions'), where('creatorId', '==', uid))),
+      getDocs(query(collection(db, 'sessions'), where('partnerId', '==', uid)))
+    ])
+    for (const d of [...asCreator.docs, ...asPartner.docs]) {
+      const data = d.data() as { expireAt?: Timestamp; createdAt?: string }
+      const expires = data.expireAt?.toMillis() ?? (Date.parse(data.createdAt ?? '') + SESSION_TTL_MS)
+      if (Number.isFinite(expires) && expires < Date.now()) await deleteSession(d.id)
+    }
+  } catch { /* best effort: try again next start */ }
 }
 
 export async function getActiveSession(uid: string): Promise<TogetherSession | null> {

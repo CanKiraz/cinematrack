@@ -3,6 +3,7 @@ import MovieCard from '../components/MovieCard'
 import MovieDetailModal from '../components/MovieDetailModal'
 import { Kind, Movie, WatchlistEntry } from '../types'
 import { syncUid } from '../services/auth'
+import { apiErrorText } from '../services/apiError'
 import { syncAddMovie, syncRemoveMovie, syncAddWatchLog } from '../services/sync'
 import { onDataChanged } from '../services/events'
 import { useI18n, titleOf, overviewOf, genreLabel, Lang } from '../services/i18n'
@@ -251,7 +252,7 @@ export default function Watchlist({ kind }: { kind: Kind }) {
       }))
       setResults(detailed)
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('Search failed'))
+      setError(apiErrorText(e, t) ?? (e instanceof Error ? e.message : t('Search failed')))
     } finally { setSearching(false) }
   }
 
