@@ -26,14 +26,20 @@ npm run deploy:rules      # or paste the file in console -> Firestore -> Rules
 **Authentication**
 - Sign-in method: enable *Email/Password*.
 - Settings → User actions: turn on *Email enumeration protection*.
-- Settings → Password policy: require at least 8 characters (the apps check this too).
-- Templates: set the sender name and language of the verification and password-reset emails.
+- Settings → Password policy: optional. The apps already require 8 characters when signing up. If you enforce a policy
+  on a project that has older accounts, use *Notify* mode so people with shorter passwords can still sign in.
+- Templates: set the sender name of the verification, password-reset and email-change messages.
 
-**Firestore TTL** (removes abandoned Watch Together data; Firestore does not do this by itself)
+**Abandoned Watch Together data**
+
+Sessions and their summaries carry an `expireAt` time. Firestore's TTL feature could delete them automatically, but it
+needs a paid (Blaze) plan, so by default the apps clean up after themselves: on start, each one removes its own
+sessions that are past `expireAt` (`cleanupStaleSessions` on desktop, `SessionCleanup` on Android).
+If your project is on Blaze you can add TTL policies as well (offset 0):
 
 ```bash
-gcloud firestore fields ttls update expireAt --collection-group=sessions --enable-ttl --project=cinematrack-f5ee4
-gcloud firestore fields ttls update expireAt --collection-group=payload  --enable-ttl --project=cinematrack-f5ee4
+gcloud firestore fields ttls update expireAt --collection-group=sessions --enable-ttl --project=<your-project>
+gcloud firestore fields ttls update expireAt --collection-group=payload  --enable-ttl --project=<your-project>
 ```
 
 **API key** (Google Cloud console → APIs & Services → Credentials → the key the apps use)

@@ -16,7 +16,7 @@ FIREBASE_PROJECT_ID = "cinematrack-f5ee4"
 [[d1_databases]]
 binding = "DB"
 database_name = "cinematrack"
-database_id = "REPLACE-WITH-THE-ID-PRINTED-BY-wrangler-d1-create"
+database_id = "7d110255-176c-44d9-b17b-2a28ecfc6ac4"
 
 [triggers]
 # Daily housekeeping: drops old usage rows and cached captions
