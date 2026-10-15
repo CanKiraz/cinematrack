@@ -272,7 +272,7 @@ function MainApp() {
         )}
       </main>
       {showSettings && (
-        <SettingsModal onClose={() => setShowSettings(false)} />
+        <SettingsModal onClose={() => setShowSettings(false)} onBeforeDelete={stopListeners} />
       )}
     </div>
   )

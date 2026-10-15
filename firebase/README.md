@@ -15,7 +15,7 @@ Both apps share one Firebase project: **Authentication** (email + password) and 
 ```bash
 cd firebase
 npm install
-npm test                  # starts the Firestore emulator (needs a recent Java; it ran on 22) and runs 24 rule tests
+npm test                  # starts the Firestore emulator (needs a recent Java; it ran on 22) and runs the rule tests
 npm run deploy:rules      # or paste the file in console -> Firestore -> Rules
 ```
 

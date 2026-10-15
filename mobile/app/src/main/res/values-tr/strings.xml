@@ -104,6 +104,15 @@
     <string name="statistics">İstatistikler</string>
     <string name="stats_subtitle">İzleme yolculuğun</string>
     <string name="sign_out">Çıkış yap</string>
+    <string name="delete_account">Hesabı sil</string>
+    <string name="delete_account_title">Hesabın silinsin mi?</string>
+    <string name="delete_account_message">Bu işlem hesabını ve çevrimiçi saklanan her şeyi kalıcı olarak siler: listelerini, puanlarını, notlarını ve Birlikte İzle oturumlarını. Geri alınamaz. Onaylamak için şifreni yaz.</string>
+    <string name="delete_account_password_hint">Şifre</string>
+    <string name="delete_account_confirm">Hesabımı sil</string>
+    <string name="delete_account_working">Hesabın siliniyor…</string>
+    <string name="delete_account_done">Hesabın silindi.</string>
+    <string name="delete_account_wrong_password">Şifre yanlış.</string>
+    <string name="delete_account_failed">Hesap silinemedi. Hiçbir şey kaybolmadı; tekrar dene.</string>
     <string name="sign_out_title">Çıkış yapılsın mı?</string>
     <string name="sign_out_message">Listelerini görmek için tekrar giriş yapman gerekecek.</string>
     <string name="week">Hafta</string>

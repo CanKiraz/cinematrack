@@ -1,6 +1,8 @@
 package com.cinematrack.share;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.*;
 import android.widget.*;
 import androidx.annotation.NonNull;
@@ -69,9 +71,58 @@ public class StatsFragment extends Fragment {
                 .setTitle(R.string.sign_out_title)
                 .setMessage(R.string.sign_out_message)
                 .setPositiveButton(R.string.sign_out, (d, w) -> signOut())
+                .setNeutralButton(R.string.delete_account, (d, w) -> confirmDeleteAccount())
                 .setNegativeButton(R.string.cancel, null).show());
 
         listenWatchLog();
+    }
+
+    private void confirmDeleteAccount() {
+        final android.widget.EditText password = new android.widget.EditText(requireContext());
+        password.setHint(R.string.delete_account_password_hint);
+        password.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        android.widget.FrameLayout box = new android.widget.FrameLayout(requireContext());
+        box.setPadding(pad, pad / 2, pad, 0);
+        box.addView(password);
+
+        new android.app.AlertDialog.Builder(requireContext())
+            .setTitle(R.string.delete_account_title)
+            .setMessage(R.string.delete_account_message)
+            .setView(box)
+            .setPositiveButton(R.string.delete_account_confirm, (d, w) -> {
+                String typed = password.getText().toString();
+                if (typed.isEmpty()) return;
+                deleteAccount(typed);
+            })
+            .setNegativeButton(R.string.cancel, null).show();
+    }
+
+    private void deleteAccount(String password) {
+        android.content.Context ctx = requireContext().getApplicationContext();
+        Toast.makeText(ctx, R.string.delete_account_working, Toast.LENGTH_SHORT).show();
+        Handler main = new Handler(Looper.getMainLooper());
+        AccountDeletion.run(password, new AccountDeletion.Callback() {
+            @Override public void onDone() {
+                main.post(() -> {
+                    Toast.makeText(ctx, R.string.delete_account_done, Toast.LENGTH_LONG).show();
+                    // the account is gone: back to the login screen and drop everything else
+                    android.content.Intent i = new android.content.Intent(ctx, LoginActivity.class);
+                    i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    ctx.startActivity(i);
+                });
+            }
+            @Override public void onFailed(AccountDeletion.Failure why) {
+                int msg;
+                switch (why) {
+                    case WRONG_PASSWORD: msg = R.string.delete_account_wrong_password; break;
+                    case TOO_MANY:       msg = R.string.login_too_many; break;
+                    case NETWORK:        msg = R.string.login_network; break;
+                    default:             msg = R.string.delete_account_failed;
+                }
+                main.post(() -> Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show());
+            }
+        });
     }
 
     private void signOut() {

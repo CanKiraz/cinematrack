@@ -104,6 +104,15 @@
     <string name="statistics">Statistics</string>
     <string name="stats_subtitle">Your watching journey</string>
     <string name="sign_out">Sign out</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_message">This permanently deletes your account and everything stored online: your lists, ratings, notes and Watch Together sessions. It cannot be undone. Type your password to confirm.</string>
+    <string name="delete_account_password_hint">Password</string>
+    <string name="delete_account_confirm">Delete my account</string>
+    <string name="delete_account_working">Deleting your account…</string>
+    <string name="delete_account_done">Your account was deleted.</string>
+    <string name="delete_account_wrong_password">Wrong password.</string>
+    <string name="delete_account_failed">Could not delete the account. Nothing was lost; try again.</string>
     <string name="sign_out_title">Sign out?</string>
     <string name="sign_out_message">You\'ll need to sign in again to see your lists.</string>
     <string name="week">Week</string>

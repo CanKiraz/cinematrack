@@ -287,16 +287,28 @@ export function listenSession(sid: string, cb: (s: TogetherSession | null) => vo
  */
 export async function cleanupStaleSessions(uid: string): Promise<void> {
   try {
-    const [asCreator, asPartner] = await Promise.all([
-      getDocs(query(collection(db, 'sessions'), where('creatorId', '==', uid))),
-      getDocs(query(collection(db, 'sessions'), where('partnerId', '==', uid)))
-    ])
-    for (const d of [...asCreator.docs, ...asPartner.docs]) {
+    for (const d of await sessionsOf(uid)) {
       const data = d.data() as { expireAt?: Timestamp; createdAt?: string }
       const expires = data.expireAt?.toMillis() ?? (Date.parse(data.createdAt ?? '') + SESSION_TTL_MS)
       if (Number.isFinite(expires) && expires < Date.now()) await deleteSession(d.id)
     }
   } catch { /* best effort: try again next start */ }
+}
+
+/** Removes every Watch Together session this user is in (used when the account is deleted). Throws on failure. */
+export async function deleteAllSessions(uid: string): Promise<void> {
+  for (const d of await sessionsOf(uid)) {
+    await deletePayloads(d.id)
+    await deleteDoc(d.ref)
+  }
+}
+
+async function sessionsOf(uid: string) {
+  const [asCreator, asPartner] = await Promise.all([
+    getDocs(query(collection(db, 'sessions'), where('creatorId', '==', uid))),
+    getDocs(query(collection(db, 'sessions'), where('partnerId', '==', uid)))
+  ])
+  return [...asCreator.docs, ...asPartner.docs]
 }
 
 export async function getActiveSession(uid: string): Promise<TogetherSession | null> {

@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import {
   initializeTestEnvironment, assertFails, assertSucceeds
 } from '@firebase/rules-unit-testing'
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, collection, query, where
+  doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, collection, query, where, limit
 } from 'firebase/firestore'
 
 const rules = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../firestore.rules'), 'utf8')
@@ -190,5 +190,45 @@ describe('watch together payloads', () => {
       await deleteDoc(doc(db, 'sessions/ABC123'))
     })
     await assertSucceeds(deleteDoc(doc(as.alice(), 'sessions/ABC123/payload/alice')))
+  })
+})
+
+describe('deleting an account', () => {
+  // The apps do exactly this, in this order, before they delete the sign-in account itself
+  it('lets a person remove all their lists and sessions, including the other member\'s summary inside them', async () => {
+    await seed(async db => {
+      for (const col of ['movies', 'shows', 'watchlog', 'showlog', 'meta']) {
+        await setDoc(doc(db, `watchlists/alice/${col}/a`), { title: 'x' })
+        await setDoc(doc(db, `watchlists/alice/${col}/b`), { title: 'y' })
+      }
+      await setDoc(doc(db, 'sessions/ABC123'), fullSession)              // alice created it, bob joined
+      await setDoc(doc(db, 'sessions/ABC123/payload/alice'), payload('alice'))
+      await setDoc(doc(db, 'sessions/ABC123/payload/bob'), payload('bob'))
+      await setDoc(doc(db, 'watchlists/bob/movies/z'), { title: 'bob keeps this' })
+    })
+
+    const db = as.alice()
+    for (const col of ['movies', 'shows', 'watchlog', 'showlog', 'meta']) {
+      const snap = await assertSucceeds(getDocs(query(collection(db, `watchlists/alice/${col}`), limit(400))))
+      for (const d of snap.docs) await assertSucceeds(deleteDoc(d.ref))
+    }
+    const mine = await assertSucceeds(getDocs(query(collection(db, 'sessions'), where('creatorId', '==', 'alice'))))
+    const joined = await assertSucceeds(getDocs(query(collection(db, 'sessions'), where('partnerId', '==', 'alice'))))
+    for (const s of [...mine.docs, ...joined.docs]) {
+      const summaries = await assertSucceeds(getDocs(collection(db, `sessions/${s.id}/payload`)))
+      for (const p of summaries.docs) await assertSucceeds(deleteDoc(p.ref))
+      await assertSucceeds(deleteDoc(s.ref))
+    }
+
+    // alice's data is gone, bob's is untouched
+    await env.withSecurityRulesDisabled(async ctx => {
+      const check = ctx.firestore()
+      for (const col of ['movies', 'shows', 'watchlog', 'showlog', 'meta']) {
+        expect((await getDocs(collection(check, `watchlists/alice/${col}`))).size).toBe(0)
+      }
+      expect((await getDoc(doc(check, 'sessions/ABC123'))).exists()).toBe(false)
+      expect((await getDocs(collection(check, 'sessions/ABC123/payload'))).size).toBe(0)
+      expect((await getDoc(doc(check, 'watchlists/bob/movies/z'))).exists()).toBe(true)
+    })
   })
 })
