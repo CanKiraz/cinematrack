@@ -21,7 +21,7 @@ app ──(Firebase ID token)──▶ Worker ──(secret keys)──▶ TMDB 
 
 ## API
 
-All routes except `/health` need `Authorization: Bearer <Firebase ID token>`. Errors look like
+All routes except `/health` and `/v1/names/check` need `Authorization: Bearer <Firebase ID token>`. Errors look like
 `{ "error": "<code>", "message": "..." }`; limits answer `429` with a `Retry-After` header.
 
 | Route | Body → Response |
@@ -32,6 +32,7 @@ All routes except `/health` need `Authorization: Bearer <Firebase ID token>`. Er
 | `POST /v1/ai/together` | `{ kind, language, users: [U, U] }` where `U = { name, random: bool, prompt?, watched: [Item], watchlist: [Item] }` → `{ pick: { title, year, genre, reasoning, source: "both"\|"first"\|"second"\|"gemini" } \| null }`. `first` / `second` follow the order of `users`. |
 | `POST /v1/ai/titles` | `{ caption }` → `{ titles: [string] }` (at most 3) |
 | `POST /v1/instagram/caption` | `{ url }` → `{ caption, cached }` |
+| `POST /v1/names/check` (**no token**) | `{ name }` → `{ ok: true }` or `{ ok: false, reason: "format" | "blocked" | "reserved" }`. Used while signing up and renaming; see `src/names.ts` for what is refused. |
 
 Calls that count against a limit (everything except `/health`, and an Instagram caption served from the cache) answer with an
 `X-RateLimit-Remaining` header: how many more calls of that kind the person has in the current period (day or month).
@@ -49,6 +50,7 @@ Defaults (`src/limits.ts`), per user and for everyone together:
 | `together` | 10 / day | 300 / day |
 | `titles` | 20 / day | 300 / day |
 | `caption` (RapidAPI) | 3 / month | 80 / month |
+| `names` (open route) | shared | 3000 / day |
 
 Change them without redeploying code: set `LIMITS` in `wrangler.toml` (or the dashboard), e.g.
 `LIMITS = '{"chat":{"perUser":50,"global":2000}}'`.
