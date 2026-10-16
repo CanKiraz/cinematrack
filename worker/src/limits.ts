@@ -48,7 +48,7 @@ export function periodEnd(period: Limit['period'], now: Date): Date {
 }
 
 export type Consumption =
-  | { ok: true; release: () => Promise<void> }
+  | { ok: true; remaining: number; release: () => Promise<void> }
   | { ok: false; scope: 'user' | 'global'; retryAfterSeconds: number }
 
 // Increment only while below the limit; the row comes back only if the increment happened.
@@ -57,10 +57,11 @@ const TAKE = `INSERT INTO usage (scope, key, period, count) VALUES (?, ?, ?, 1)
               RETURNING count`
 const GIVE_BACK = `UPDATE usage SET count = count - 1 WHERE scope = ? AND key = ? AND period = ? AND count > 0`
 
-async function take(db: D1Database, action: Action, key: string, period: string, max: number): Promise<boolean> {
-  if (max <= 0) return false
+/** The new count after taking one unit, or null when the limit was already reached. */
+async function take(db: D1Database, action: Action, key: string, period: string, max: number): Promise<number | null> {
+  if (max <= 0) return null
   const row = await db.prepare(TAKE).bind(action, key, period, max).first<{ count: number }>()
-  return row !== null
+  return row === null ? null : row.count
 }
 
 async function giveBack(db: D1Database, action: Action, key: string, period: string): Promise<void> {
@@ -78,14 +79,16 @@ export async function consume(
   const period = periodKey(limit.period, now)
   const retryAfterSeconds = Math.max(1, Math.ceil((periodEnd(limit.period, now).getTime() - now.getTime()) / 1000))
 
-  if (!(await take(db, action, '*', period, limit.global))) return { ok: false, scope: 'global', retryAfterSeconds }
-  if (!(await take(db, action, uid, period, limit.perUser))) {
+  if ((await take(db, action, '*', period, limit.global)) === null) return { ok: false, scope: 'global', retryAfterSeconds }
+  const used = await take(db, action, uid, period, limit.perUser)
+  if (used === null) {
     await giveBack(db, action, '*', period)
     return { ok: false, scope: 'user', retryAfterSeconds }
   }
   let released = false
   return {
     ok: true,
+    remaining: Math.max(0, limit.perUser - used),   // what this person has left in the current period
     release: async () => {
       if (released) return
       released = true

@@ -13,6 +13,16 @@ describe('consume', () => {
     expect(third).toMatchObject({ ok: false, scope: 'user' })
   })
 
+  it('reports how many calls the person has left in this period', async () => {
+    const db = fakeD1()
+    const limits = loadLimits(JSON.stringify({ chat: { perUser: 3, global: 10 } }))
+    const left = async () => { const r = await consume(db, 'chat', 'alice', limits, NOW); return r.ok ? r.remaining : null }
+    expect([await left(), await left(), await left(), await left()]).toEqual([2, 1, 0, null])
+    // another person has their own allowance
+    const bob = await consume(db, 'chat', 'bob', limits, NOW)
+    expect(bob.ok && bob.remaining).toBe(2)
+  })
+
   it('counts users separately', async () => {
     const db = fakeD1()
     await consume(db, 'chat', 'alice', tight, NOW)

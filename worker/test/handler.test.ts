@@ -164,6 +164,39 @@ describe('AI chat', () => {
   })
 })
 
+describe('remaining allowance header', () => {
+  const remaining = (res: Response) => res.headers.get('X-RateLimit-Remaining')
+  const env = { LIMITS: JSON.stringify({ chat: { perUser: 3 }, tmdb: { perUser: 5 }, titles: { perUser: 2 }, caption: { perUser: 3 } }) }
+
+  it('counts down on AI chat, and is absent from error answers', async () => {
+    const chatBody = { kind: 'movie', language: 'en', messages: [{ role: 'user', text: 'hi' }] }
+    const routes = () => geminiAnswer('hello')
+    const first = await call('POST', '/v1/ai/chat', { body: chatBody, env, routes })
+    const second = await call('POST', '/v1/ai/chat', { body: chatBody, env, routes })
+    expect([remaining(first.res), remaining(second.res)]).toEqual(['2', '1'])
+    const bad = await call('POST', '/v1/ai/chat', { body: { ...chatBody, kind: 'book' }, env, routes })
+    expect(bad.res.status).toBe(400)
+    expect(remaining(bad.res)).toBeNull()
+  })
+
+  it('is on TMDB and reel-title answers too', async () => {
+    const tmdb = await call('GET', '/v1/tmdb/search/movie?query=heat', { env, routes: () => jsonResponse({ results: [] }) })
+    expect(remaining(tmdb.res)).toBe('4')
+    const titles = await call('POST', '/v1/ai/titles', { body: { caption: 'Heat 1995' }, env, routes: () => geminiAnswer('["Heat"]') })
+    expect(remaining(titles.res)).toBe('1')
+  })
+
+  it('is on a fresh Instagram lookup but not on one served from the cache', async () => {
+    const rapid = () => jsonResponse({ data: { caption: { text: 'Great scene from Heat' } } })
+    const url = 'https://www.instagram.com/reel/CxHdr/'
+    const fresh = await call('POST', '/v1/instagram/caption', { body: { url }, env, routes: rapid })
+    expect(remaining(fresh.res)).toBe('2')
+    const cached = await call('POST', '/v1/instagram/caption', { body: { url }, env, routes: rapid })
+    expect(cached.body['cached']).toBe(true)
+    expect(remaining(cached.res)).toBeNull()
+  })
+})
+
 describe('Watch Together', () => {
   const person = (name: string, random: boolean) => ({
     name, random, prompt: random ? undefined : 'something funny',

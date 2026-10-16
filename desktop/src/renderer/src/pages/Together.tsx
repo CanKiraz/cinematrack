@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, Component, ReactNode } from 'react'
 import { User } from 'firebase/auth'
-import AuthModal from '../components/AuthModal'
-import VerifyEmail from '../components/VerifyEmail'
 import MovieDetailModal from '../components/MovieDetailModal'
-import { onAuthChange, logout } from '../services/auth'
+import { logout } from '../services/auth'
 import {
   createSession, joinSession, submitPreference, submitVote,
   listenSession, deleteSession, deleteOwnPayload, SessionError,
@@ -134,6 +132,8 @@ function ResultCard({ movie, kind, session, userId, onAddWatchlist, onVote, adde
 }
 
 interface Props {
+  /** The signed-in account with a verified email: the app only shows this page to someone who is (see App.tsx). */
+  user: User
   kind: Kind
   sessionId: string | null
   setSessionId: (id: string | null) => void
@@ -141,12 +141,9 @@ interface Props {
   setSession: (s: TogetherSession | null) => void
 }
 
-export default function Together({ kind, sessionId, setSessionId, session, setSession }: Props) {
+export default function Together({ user, kind, sessionId, setSessionId, session, setSession }: Props) {
   const { t, tmdbLang } = useI18n()
   const isTv = kind === 'tv'
-  const [user, setUser]             = useState<User | null>(null)
-  const [verified, setVerified]     = useState(false)
-  const [authReady, setAuthReady]   = useState(false)
   const [joinCode, setJoinCode]     = useState('')
   const [preference, setPref]       = useState('')
   const [isRandom, setIsRandom]     = useState(false)
@@ -157,13 +154,10 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   const [added, setAdded]           = useState(false)
   const unsubRef = useRef<(() => void) | null>(null)
 
-  useEffect(() => onAuthChange(u => { setUser(u); setVerified(!!u?.emailVerified); setAuthReady(true) }), [])
-
   // Only reconnect if App.tsx remembers a sessionId — no automatic searching
   useEffect(() => {
-    if (!user || !verified || !sessionId) return
-    subscribeSession(sessionId)
-  }, [user, verified])
+    if (sessionId) subscribeSession(sessionId)
+  }, [])
 
   function subscribeSession(id: string) {
     if (unsubRef.current) unsubRef.current()
@@ -188,7 +182,6 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   useEffect(() => () => { unsubRef.current?.() }, [])
 
   async function handleCreate() {
-    if (!user) return
     setCreating(true); setError(null)
     try {
       const id = await createSession(user.uid, user.displayName || user.uid, kind)
@@ -198,7 +191,7 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   }
 
   async function handleJoin() {
-    if (!user || !joinCode.trim()) return
+    if (!joinCode.trim()) return
     setJoining(true); setError(null)
     try {
       const code = joinCode.trim().toUpperCase()
@@ -216,7 +209,7 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   }
 
   async function handleSubmit() {
-    if (!session || !user) return
+    if (!session) return
     setSubmitting(true); setError(null)
     try {
       const pref = isRandom ? 'random' : preference.trim() || 'anything'
@@ -226,7 +219,7 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   }
 
   async function handleVote(vote: 'ok' | 'again') {
-    if (!session || !user) return
+    if (!session) return
     if (vote === 'again') setAdded(false)
     await submitVote(session, user.uid, vote)
     // after "again" the state resets via listenSession (status=both_joined)
@@ -241,27 +234,10 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
   }
 
   async function handleAddToWatchlist(movie: Movie) {
-    if (!user) return
     await window.api.addToWatchlist(movie, kind)
     await syncAddMovie(user.uid, movie, kind)
     setAdded(true)
   }
-
-  if (!authReady) return (
-    <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
-      {t('Loading…')}
-    </div>
-  )
-  if (!user) return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <AuthModal onSuccess={() => {}} />
-    </div>
-  )
-  if (!verified) return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <VerifyEmail user={user} onVerified={() => setVerified(true)} />
-    </div>
-  )
 
   const isCreator = session?.creatorId === user.uid
   const mySubmitted = session ? (isCreator
@@ -384,7 +360,7 @@ export default function Together({ kind, sessionId, setSessionId, session, setSe
         )}
 
         {/* Result found */}
-        {session?.status === 'resolved' && session.result && user && (
+        {session?.status === 'resolved' && session.result && (
           <div>
             <p className="text-base font-semibold text-white mb-3">{isTv ? t('🎉 Series found!') : t('🎉 Movie found!')}</p>
             <ResultCard

@@ -33,6 +33,9 @@ All routes except `/health` need `Authorization: Bearer <Firebase ID token>`. Er
 | `POST /v1/ai/titles` | `{ caption }` → `{ titles: [string] }` (at most 3) |
 | `POST /v1/instagram/caption` | `{ url }` → `{ caption, cached }` |
 
+Calls that count against a limit (everything except `/health`, and an Instagram caption served from the cache) answer with an
+`X-RateLimit-Remaining` header: how many more calls of that kind the person has in the current period (day or month).
+
 `Item` = `{ title, genres?: [string], vote_average?, release_date?, rating?, watched_at? }`. Anything else in an item (notes, ids, posters) is ignored.
 
 ## Limits
@@ -76,7 +79,7 @@ The apps need that URL. Update later with `npm run deploy` again; secrets and da
 cp .dev.vars.example .dev.vars              # your own keys
 npm run db:migrate:local
 npm run dev                                 # http://127.0.0.1:8787
-npm test                                    # 60 tests; no Cloudflare account or network needed
+npm test                                    # no Cloudflare account or network needed
 npm run typecheck
 ```
 
