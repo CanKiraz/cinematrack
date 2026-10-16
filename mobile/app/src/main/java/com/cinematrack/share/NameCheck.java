@@ -19,7 +19,9 @@ final class NameCheck {
 
     enum Verdict { OK, FORMAT, BLOCKED, RESERVED }
 
-    static final Pattern FORMAT = Pattern.compile("^[A-Za-z0-9_.-]{2,20}$");
+    // Latin letters with accents (Turkish ç ğ ı ö ş ü İ included), digits, . _ -  Other scripts are left out on purpose:
+    // the word list on the server can only read Latin letters. Written as ranges so every Android version reads it the same.
+    static final Pattern FORMAT = Pattern.compile("^[A-Za-z\\u00C0-\\u024F0-9_.-]{2,20}$");
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()

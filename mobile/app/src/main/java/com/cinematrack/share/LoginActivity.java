@@ -32,7 +32,6 @@ public class LoginActivity extends AppCompatActivity {
     private enum Mode { LOGIN, REGISTER, RESET, VERIFY, UPGRADE, UPGRADE_SENT }
 
     static final int MIN_PASSWORD = 8;
-    private static final Pattern DISPLAY_NAME = Pattern.compile("^[A-Za-z0-9_.-]{2,20}$");
     /** Before real emails, accounts were username@cinematrack.local. Those people can still type just the username. */
     private static final String LEGACY_DOMAIN = "@cinematrack.local";
 
@@ -207,7 +206,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = etPassword.getText().toString();
         if (email.isEmpty() || name.isEmpty() || password.isEmpty()) { showError(getString(R.string.login_empty_fields)); return; }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) { showError(getString(R.string.login_invalid_email)); return; }
-        if (!DISPLAY_NAME.matcher(name).matches()) { showError(getString(R.string.login_invalid_name)); return; }
+        if (!NameCheck.FORMAT.matcher(name).matches()) { showError(getString(R.string.login_invalid_name)); return; }
         if (password.length() < MIN_PASSWORD) { showError(getString(R.string.login_weak_password, MIN_PASSWORD)); return; }
 
         busy(true);

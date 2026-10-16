@@ -20,7 +20,8 @@ import { auth } from '../firebase'
 const LEGACY_DOMAIN = '@cinematrack.local'
 
 export const MIN_PASSWORD = 8
-export const DISPLAY_NAME_RE = /^[A-Za-z0-9_.-]{2,20}$/
+// Latin letters including Turkish ones (ç ğ ı ö ş ü İ), digits, . _ -  Other scripts are left out on purpose: the word list can only read Latin letters.
+export const DISPLAY_NAME_RE = /^[\p{Script=Latin}0-9_.-]{2,20}$/u
 
 export function isLegacyAccount(user: User | null): boolean {
   return !!user?.email?.toLowerCase().endsWith(LEGACY_DOMAIN)
