@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { currentUser, logout } from '../services/auth'
+import { currentUser, logout, renameAccount } from '../services/auth'
 import { deleteMyAccount } from '../services/account'
 import { useI18n } from '../services/i18n'
 
@@ -17,6 +17,9 @@ export default function SettingsModal({ onClose, onBeforeDelete }: Props) {
   const [password, setPassword]   = useState('')
   const [busy, setBusy]           = useState(false)
   const [error, setError]         = useState<string | null>(null)
+  const [name, setName]           = useState<string | null>(null)   // non-null while the name is being edited
+  const [nameMsg, setNameMsg]     = useState<{ text: string; ok: boolean } | null>(null)
+  const [shownName, setShownName] = useState(user?.displayName || '')
 
   async function confirmDelete() {
     if (!password || busy) return
@@ -35,6 +38,26 @@ export default function SettingsModal({ onClose, onBeforeDelete }: Props) {
     }
   }
 
+  async function saveName() {
+    if (name === null || busy) return
+    setBusy(true); setNameMsg(null)
+    try {
+      await renameAccount(name)
+      setShownName(name.trim())
+      setName(null)
+      setNameMsg({ text: t('Name updated.'), ok: true })
+    } catch (e) {
+      const code = (e as { code?: string }).code
+      const text = code === 'name/blocked' ? t('That display name is not allowed. Please pick another.')
+        : code === 'name/reserved' ? t('That display name is reserved. Please pick another.')
+        : code === 'name/format' ? t('Display name: 2–20 letters, numbers, . _ - only.')
+        : t('Something went wrong. Try again.') + (code ? ` (${code})` : '')
+      setNameMsg({ text, ok: false })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75" onClick={busy ? undefined : onClose}>
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md mx-4 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -43,10 +66,34 @@ export default function SettingsModal({ onClose, onBeforeDelete }: Props) {
         <div className="mb-6">
           <p className="block text-xs font-semibold text-zinc-300 mb-2 uppercase tracking-wide">{t('Account')}</p>
           <div className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3">
-            <p className="text-sm text-white">{user?.displayName || '—'}</p>
+            <p className="text-sm text-white">{shownName || '—'}</p>
             <p className="text-xs text-zinc-400 mt-0.5">{user?.email}</p>
           </div>
+          {nameMsg && <p className={`text-xs mt-2 ${nameMsg.ok ? 'text-emerald-300' : 'text-red-300'}`}>{nameMsg.text}</p>}
+          {name !== null && (
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveName()}
+                maxLength={20}
+                disabled={busy}
+                autoFocus
+                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-blue-500"
+              />
+              <button onClick={() => { setName(null); setNameMsg(null) }} disabled={busy}
+                className="px-3 rounded-lg border border-zinc-700 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 cursor-pointer">{t('Cancel')}</button>
+              <button onClick={saveName} disabled={busy || !name.trim() || name.trim() === shownName}
+                className="px-3 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-xs font-semibold text-white cursor-pointer">{busy ? '…' : t('Save')}</button>
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-4">
+            {name === null && (
+              <button onClick={() => { setName(shownName); setNameMsg(null) }} className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer">
+                {t('Change name')}
+              </button>
+            )}
             <button
               onClick={() => { onClose(); void logout() }}
               className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"

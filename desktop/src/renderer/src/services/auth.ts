@@ -31,7 +31,36 @@ function loginEmail(identifier: string): string {
   return v.includes('@') ? v : `${v.toLowerCase()}${LEGACY_DOMAIN}`
 }
 
+/** A display name the check refused. `code` is "name/format", "name/blocked" or "name/reserved". */
+export class NameError extends Error {
+  code: string
+  constructor(reason: string) {
+    super(`name:${reason}`)
+    this.code = `name/${reason}`
+  }
+}
+
+/**
+ * Asks the CinemaTrack API whether the name is acceptable (format, offensive words, reserved names).
+ * If the API cannot be reached the name is let through: a check outage must not stop anybody from signing up.
+ */
+export async function assertNameAllowed(name: string): Promise<void> {
+  const trimmed = name.trim()
+  if (!DISPLAY_NAME_RE.test(trimmed)) throw new NameError('format')
+  const verdict = await window.api.checkName(trimmed)
+  if (!verdict.ok) throw new NameError(verdict.reason ?? 'blocked')
+}
+
+/** Changes the name shown to Watch Together partners. */
+export async function renameAccount(newName: string): Promise<void> {
+  const user = auth.currentUser
+  if (!user) throw new Error('Not signed in')
+  await assertNameAllowed(newName)
+  await updateProfile(user, { displayName: newName.trim() })
+}
+
 export async function register(email: string, password: string, displayName: string): Promise<User> {
+  await assertNameAllowed(displayName)   // before the account exists, so a refused name leaves nothing behind
   const cred = await createUserWithEmailAndPassword(auth, email.trim(), password)
   await updateProfile(cred.user, { displayName: displayName.trim() })
   await sendEmailVerification(cred.user)
