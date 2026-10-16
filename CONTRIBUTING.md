@@ -45,7 +45,7 @@ npx tsc --noEmit -p tsconfig.node.json        # typecheck the main process
 ```bash
 cd worker
 npm install
-npm test                                      # 60+ tests, no account or network needed
+npm test                                      # 80+ tests, no account or network needed
 npm run typecheck
 npm run dev                                   # local API on http://127.0.0.1:8787 (needs .dev.vars: see worker/README.md)
 ```
@@ -81,7 +81,7 @@ Things worth knowing:
 1. Fork, then branch from `main` (`fix/short-description`, `feat/short-description`).
 2. Keep the change focused. Several small pull requests beat one big one.
 3. **Add or update a test when behaviour changes.** The Worker and the Firestore rules are fully tested, and a change
-   there without a test will be asked for one. The apps have no unit tests yet (adding some is a good first issue).
+   there without a test will be asked for one. The desktop database layer has unit tests (`npm test` in `desktop/`); the Android app has none yet (adding some is a good first issue).
 4. Run the checks for the part you touched.
 5. Open a pull request and fill in the template. CI must be green.
 

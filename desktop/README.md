@@ -1,70 +1,55 @@
-# CinemaTrack 🎬
+# CinemaTrack for Windows
 
-Your personal movie watchlist and statistics tracker — a local Windows desktop app with AI-powered discovery.
+The desktop app: Electron, React and TypeScript, with a local SQLite database that syncs to the cloud.
+Part of the [CinemaTrack monorepo](..); the API it talks to lives in [`../worker`](../worker).
 
-## Features
+## Run it
 
-- **Watchlist** — Search TMDB, add movies, filter by genre, mark as watched with optional rating & notes
-- **Statistics** — GitHub-style heatmap calendar, total counts, average rating, favorite genre, full watch history
-- **AI Chat** — Chat with Gemini to find movies, pick from your watchlist, or ask about your watching habits
-
-## Prerequisites
-
-1. **Node.js v18+** — Download from [nodejs.org](https://nodejs.org) (LTS recommended)
-2. **TMDB API key** (free) — Register at [themoviedb.org](https://www.themoviedb.org/signup), go to Settings → API → Request API Key
-3. **Gemini API key** (free) — Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → Create API Key
-
-## Setup
+You need **Node 22**. No TMDB or Gemini key is needed: the app signs in with Firebase and calls the CinemaTrack API.
 
 ```bash
-# 1. Install dependencies (also rebuilds better-sqlite3 for Electron)
 npm install
-
-# 2. Start the app in development mode
-npm run dev
+npm run dev          # the first run downloads Electron (about 100 MB)
 ```
 
-On first launch, a settings dialog will appear. Paste in your TMDB and Gemini API keys.
+Create an account in the app (a real email address; a confirmation link is sent) and sign in. **Please use a throw-away account while developing.**
 
-## Package as a Windows installer
+Optional settings go in `.env` (copy `.env.example`): `MAIN_VITE_API_URL` points the app at your own API, `VITE_FIREBASE_*` at your own Firebase project.
+
+## Checks
 
 ```bash
-npm run package
+npx tsc --noEmit -p tsconfig.web.json     # renderer
+npx tsc --noEmit -p tsconfig.node.json    # main process
+npm test                                  # Vitest: database layer and date helpers
+npm run build
 ```
 
-This outputs an `.exe` installer in `dist/`.
+## Build the installer
 
-## Project structure
+```bash
+npm run package      # dist/CinemaTrack-Setup-<version>.exe
+```
+
+## How it is put together
 
 ```
 src/
-  main/           Electron main process (Node.js)
-    index.ts      App entry, BrowserWindow
-    database.ts   SQLite — all DB operations
-    ipc.ts        IPC handlers + Gemini AI + TMDB API calls
-  preload/
-    index.ts      contextBridge — safely exposes API to renderer
-  renderer/
-    index.html    HTML entry point
-    src/
-      pages/      Watchlist · Stats · AIChat
-      components/ Sidebar · MovieCard · HeatmapCalendar · SettingsModal
-      types/      Shared TypeScript types + Window declaration
+  main/        Electron main process
+    index.ts     window, app lifecycle
+    database.ts  local SQLite (node:sqlite) behind a small Db class; one database belongs to one account
+    api.ts       calls to the CinemaTrack API (the main process does the network, with the Firebase token the UI hands over)
+    ipc.ts       the handlers the UI can call
+  preload/     the narrow bridge between the UI and the main process
+  renderer/    React UI
+    src/pages/       Watchlist, Stats, AI chat, Watch Together
+    src/components/  sign-in, heatmap, movie cards, settings (rename, delete account)
+    src/services/    sync with Firestore, auth, i18n (English in code, Turkish in i18n-tr.ts), date helpers
+test/          Vitest
 ```
 
-## Data storage
+- **Local first.** The watchlist and log live in SQLite on your computer; `services/sync.ts` mirrors changes to Firestore and back, so the phone sees them.
+- **One account per database.** The database stores the owner's uid. A different account gets a fresh database and the previous file is kept as a `.bak`.
+- **No secrets here.** TMDB, Gemini and RapidAPI keys exist only in the Worker.
 
-Your database is stored at:
-- **Windows**: `%APPDATA%\cinematrack\cinematrack.db`
-
-Nothing leaves your machine except TMDB and Gemini API calls.
-
-## Tech stack
-
-| Thing | What | Cost |
-|---|---|---|
-| Electron + React | Desktop shell + UI | Free |
-| better-sqlite3 | Local database | Free |
-| TMDB API | Movie data, posters | Free |
-| Google Gemini 1.5 Flash | AI chat | Free (1M tokens/day) |
-| Tailwind CSS | Styling | Free |
+Your data is stored in `%APPDATA%\cinematrack\`.
