@@ -1,4 +1,4 @@
-# CinemaTrack 0.2.1: tester guide / Test rehberi
+# CinemaTrack 0.2.2: tester guide / Test rehberi
 
 Thank you for trying CinemaTrack! It tracks the movies and series you watch, on your PC and your phone, and an AI helps you
 pick something to watch, alone or with a friend. This is an early version: **your feedback is exactly what is needed.**
@@ -10,12 +10,12 @@ pick something to watch, alone or with a friend. This is an early version: **you
 ### Install
 
 **Windows (desktop)**
-1. Run `CinemaTrack Setup 0.2.1.exe`.
+1. Run `CinemaTrack-Setup-0.2.2.exe`.
 2. Windows may say *"Windows protected your PC"*. The app is not code-signed yet (that costs money), so this is expected.
    Click **More info → Run anyway**.
 
 **Android (phone)**
-1. Copy `CinemaTrack-0.2.1.apk` to your phone and open it.
+1. Copy `CinemaTrack-0.2.2.apk` to your phone and open it.
 2. Android asks to allow installing apps from this source: allow it for the app you opened the file with (Files, Chrome, ...).
 
 ### First steps
@@ -37,6 +37,7 @@ pick something to watch, alone or with a friend. This is an early version: **you
 - [ ] Sign out and sign in with a **second account** on the same computer: it must start with its own (empty) lists, and your first account's lists must come back when you sign in with it again.
 - [ ] Use a throw-away account to try **Delete account** (desktop: Settings; phone: the gear next to EN/TR). Your real account is not needed for this.
 - [ ] Change your **display name** (desktop: Settings → Change name; phone: the gear). Names with swear words or "admin" should be refused.
+- [ ] Try a name with Turkish letters (for example "Çağlar"): it should be accepted.
 - [ ] On the phone, sort your list by **Newest added / Oldest added**. Is the sort menu readable in your phone's dark theme?
 
 ### Tell us what you think
@@ -56,12 +57,12 @@ tek başına ya da arkadaşınla ne izleyeceğini seçmene yardım eder. Bu erke
 ### Kurulum
 
 **Windows (bilgisayar)**
-1. `CinemaTrack Setup 0.2.1.exe` dosyasını çalıştır.
+1. `CinemaTrack-Setup-0.2.2.exe` dosyasını çalıştır.
 2. Windows *"Windows bilgisayarınızı korudu"* diyebilir. Uygulama henüz dijital olarak imzalı değil (imza ücretli), bu beklenen bir durum.
    **Ek bilgi → Yine de çalıştır**'a tıkla.
 
 **Android (telefon)**
-1. `CinemaTrack-0.2.1.apk` dosyasını telefonuna kopyala ve aç.
+1. `CinemaTrack-0.2.2.apk` dosyasını telefonuna kopyala ve aç.
 2. Android bu kaynaktan uygulama kurmaya izin vermeni isteyecek: dosyayı açtığın uygulama (Dosyalar, Chrome...) için izin ver.
 
 ### İlk adımlar
@@ -83,6 +84,7 @@ tek başına ya da arkadaşınla ne izleyeceğini seçmene yardım eder. Bu erke
 - [ ] Aynı bilgisayarda çıkış yapıp **ikinci bir hesapla** giriş yap: kendi (boş) listesiyle başlamalı, ilk hesabınla tekrar girince onun listesi geri gelmeli.
 - [ ] **Hesabı sil**'i deneme amaçlı açtığın bir hesapla dene (bilgisayarda Ayarlar; telefonda EN/TR düğmesinin yanındaki çark). Gerçek hesabına dokunman gerekmez.
 - [ ] **Görünen adını** değiştir (bilgisayarda Ayarlar → Adı değiştir; telefonda çark). Küfür içeren ya da "admin" gibi adlar reddedilmeli.
+- [ ] Türkçe harfli bir ad dene (örneğin "Çağlar"): kabul edilmeli.
 - [ ] Telefonda listeni **En yeni / En eski eklenen**e göre sırala. Sıralama menüsü telefonunun karanlık temasında okunuyor mu?
 
 ### Ne düşündüğünü söyle

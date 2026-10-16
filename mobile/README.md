@@ -1,31 +1,38 @@
-# CinemaTrack Android — Share Receiver
+# CinemaTrack for Android
 
-Share Instagram reels to add movies to your CinemaTrack watchlist.
+The Android app (Java). Same account and same lists as the desktop app, two modes in one: CinemaTrack (movies) and DiziTrack (series).
+Part of the [CinemaTrack monorepo](..); the API it talks to lives in [`../worker`](../worker).
 
-## How to build the APK
+## What is in it
 
-### Requirements
-- Android Studio (download from developer.android.com/studio)
-- Java 17+
+- Watchlist (sort by title, rating, year or date added), watched history with ratings and notes, statistics, AI chat and Watch Together.
+- **Share from Instagram:** share a reel to CinemaTrack and it finds the movie or series from the caption (`ShareActivity`).
+- A settings gear in the top bar: change your display name, sign out, delete your account.
+- English and Turkish (`res/values/strings.xml`, `res/values-tr/strings.xml`).
 
-### Steps
-1. Open Android Studio
-2. File → Open → select this folder
-3. Wait for Gradle sync to finish
-4. Build → Build Bundle(s) / APK(s) → Build APK(s)
-5. APK will be in `app/build/outputs/apk/debug/app-debug.apk`
+The app keeps no local database: lists are read and written in Firestore directly (offline caching is Firestore's), and
+TMDB, Gemini and RapidAPI go through the CinemaTrack API (`ApiClient`). **No API keys are in the app.**
 
-### Install on phone
-1. Copy the APK to your phone
-2. On your phone: Settings → Security → Install unknown apps → enable for Files
-3. Open the APK file and install
+## Build it
 
-## How to use
-1. Open CinemaTrack app on your phone → sign in with your CinemaTrack username & password
-2. When you see a movie reel on Instagram → tap Share → select CinemaTrack
-3. The app identifies the movie and shows it to you
-4. Tap "Add to Watchlist" — done!
+Android Studio, or JDK 17 and the Android SDK.
 
-## Also need to do in Firebase Console
-Go to Firebase Console → Authentication → Sign-in method → 
-make sure Email/Password is enabled (already done if desktop app works).
+```bash
+cp local.properties.example local.properties     # set sdk.dir
+./gradlew :app:assembleDebug                     # app/build/outputs/apk/debug/app-debug.apk
+```
+
+Copy the APK to your phone and allow installing from that source. `app/google-services.json` is the public Firebase
+configuration and is meant to be in the repo (see [SECURITY.md](../SECURITY.md)). To use your own backend, replace it with your
+project's file and set `API_URL` in `local.properties` (see the example file).
+
+## Where things are
+
+| File | What |
+|---|---|
+| `MainActivity` | top bar (mode, language, settings gear) and the four tabs |
+| `WatchlistFragment`, `StatsFragment`, `AIChatFragment`, `TogetherFragment` | the screens |
+| `LoginActivity` | sign in, create account, reset password, verify email |
+| `ApiClient` | calls the API with the Firebase token and turns errors into readable messages |
+| `FirestoreHelper` | all Firestore reads and writes |
+| `AccountDialog`, `AccountDeletion`, `NameCheck` | settings, account deletion, display-name check |

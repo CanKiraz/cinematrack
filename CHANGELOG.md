@@ -5,10 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-16
+
+Fourth test release: the name filter and the installer name. Windows installer and Android APK.
+
 ### Changed
 - The Windows installer is now named `CinemaTrack-Setup-<version>.exe` (no spaces), so the name stays the same on GitHub and in `SHA256SUMS.txt`.
 
 ### Fixed
+- **The display-name filter missed many words**, mostly Turkish forms and abbreviations (`sikis`, `gotunu`, `pic`, `amq`, `skm`, …), some insults
+  and more English terms. The list is much wider now. It lives on the server, so this already works for earlier versions of the apps.
 - **Display names can use Turkish letters** (ç ğ ı ö ş ü İ) and other accented Latin letters: "Çağlar" was refused before. Other scripts
   (Cyrillic, Arabic, …) are still not accepted, because the name filter can only read Latin letters.
 
