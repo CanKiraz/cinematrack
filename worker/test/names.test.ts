@@ -8,7 +8,7 @@ const reason = (name: string) => {
 
 describe('display names', () => {
   it('accepts ordinary names, in any language', () => {
-    for (const name of ['alex', 'Ayşe', 'Çağlar', 'İbrahim', 'Mehmet.K', 'can_kiraz', 'Anna-Lena', 'User123', 'Zoë', 'Åsa', 'Дмитрий']) {
+    for (const name of ['alex', 'Ayşe', 'Çağlar', 'İbrahim', 'Mehmet.K', 'can_kiraz', 'Anna-Lena', 'User123', 'Zoë', 'Åsa']) {
       expect(reason(name), name).toBe('ok')
     }
   })
@@ -57,6 +57,15 @@ describe('display names', () => {
       expect(reason(name), name).toBe('reserved')
     }
     expect(reason('administrator_fan'), 'a name that merely starts with one is fine').toBe('ok')
+  })
+
+  it('takes Turkish letters, and still catches profanity written with them', () => {
+    for (const name of ['Çağlar', 'Şebnem', 'Ümit', 'Göksel', 'İpek', 'Işık', 'Ömer_K']) expect(reason(name), name).toBe('ok')
+    for (const name of ['ŞİKTİR', 'götveren', 'taşak', 'orospu_çocuğu', 'AMINA_KOYİM']) expect(reason(name), name).toBe('blocked')
+  })
+
+  it('only takes Latin letters (the word list cannot read other scripts)', () => {
+    for (const name of ['Дмитрий', '李雷', 'محمد']) expect(reason(name), name).toBe('format')
   })
 
   it('checks the format first', () => {

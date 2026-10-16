@@ -4,8 +4,11 @@
 
 export type NameVerdict = { ok: true } | { ok: false; reason: 'format' | 'blocked' | 'reserved' }
 
-/** Letters (any language), digits, underscore, dot and dash; 2 to 20 characters. Same rule as the apps. */
-const FORMAT = /^[\p{L}\p{N}_.-]{2,20}$/u
+/**
+ * Latin letters (Turkish ones included), digits, underscore, dot and dash; 2 to 20 characters. Same rule as the apps.
+ * Other scripts are left out on purpose: the word list below can only read Latin letters.
+ */
+const FORMAT = /^[\p{Script=Latin}0-9_.-]{2,20}$/u
 
 // Matched anywhere inside the name. Only terms that do not appear inside ordinary words or names.
 const ANYWHERE = [
