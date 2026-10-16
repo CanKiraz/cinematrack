@@ -22,6 +22,7 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
+      "artifactName": "CinemaTrack-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,

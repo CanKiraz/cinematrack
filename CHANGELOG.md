@@ -5,6 +5,9 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 
 ## [Unreleased]
 
+### Changed
+- The Windows installer is now named `CinemaTrack-Setup-<version>.exe` (no spaces), so the name stays the same on GitHub and in `SHA256SUMS.txt`.
+
 ## [0.2.1] - 2026-10-16
 
 Third test release: the changes testers asked for. Windows installer and Android APK.
