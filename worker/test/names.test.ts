@@ -40,6 +40,22 @@ describe('display names', () => {
     }
   })
 
+  it('refuses the other common Turkish and English forms and abbreviations', () => {
+    for (const name of [
+      'sikis', 'sikici', 'sikecem', 'sikimsonik', 'gotunu', 'gotune_gel', 'pic', 'amq', 'skm', 'amk_007', 'salak', 'aptal',
+      'gerizekali', 'dangalak', 'serefsiz', 'kaltak', 'ananisikeyim', 'anasini', 'dumbass', 'retard', 'porn', 'pornhub', 'sex', 'sexy.boy',
+      'dickhead', 'wanker', 'motherfucker', 'tranny', 'idiot', 'moron', 'penis'
+    ]) {
+      expect(reason(name), name).toBe('blocked')
+    }
+  })
+
+  it('still accepts names that contain those stems inside a longer word', () => {
+    for (const name of ['Essex', 'Sussex', 'Sexton', 'Pickle', 'Picasso', 'Malcolm', 'Salako', 'Aptekin', 'Moronto', 'Idiota', 'Penistone', 'Cumali', 'Anusha', 'Titus']) {
+      expect(reason(name), name).toBe('ok')
+    }
+  })
+
   it('sees through the usual disguises', () => {
     for (const name of ['F.u.c.k', 'f_u_c_k', 'fuuuuck', 'S1KT1R', 'sıktır'.replace('ı', 'i'), 'ŞİKTİR', 'h1tler', 'b1tch', 'p3zevenk', 'ORUSPU', 'o.r.o.s.p.u']) {
       expect(reason(name), name).toBe('blocked')
