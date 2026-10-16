@@ -5,6 +5,28 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-16
+
+Third test release: the changes testers asked for. Windows installer and Android APK.
+
+### Added
+- **Date added is kept in the cloud.** Each title now stores `added_at`, so the phone can sort by it too. The first time the
+  desktop app runs, it fills in the date for titles added before this release, once (only titles that have none are touched).
+  Android: new sort options **Newest added** and **Oldest added**; titles without a date come last.
+- **Change your display name.** Desktop: Settings → *Change name*. Android: the new gear button → *Change display name*.
+- **Display names are checked** when you sign up or rename: swearing, slurs and reserved names ("admin", "support", …) are refused.
+  The check runs in the API (`POST /v1/names/check`, no sign-in needed) and ignores look-alike spelling (`s1kt1r`, `f.u.c.k`)
+  without blocking ordinary names that merely contain a bad word ("Dickens", "Scunthorpe"). It is a courtesy filter, not a security
+  boundary: if the API cannot be reached, the name is accepted. Names already stored are replaced by "User" in AI prompts if they fail the check.
+
+### Changed
+- **Android: the settings gear** sits next to the EN/TR button. *Sign out* and *Delete account* moved there from the Statistics page,
+  together with the new *Change display name*.
+
+### Fixed
+- **Android: the sort menu on My Watchlist was unreadable in the phone's dark theme.** The app now always uses its own dark colours
+  instead of following the phone's setting, and the menu has explicit text and background colours. Found by a tester.
+
 ## [0.2.0] - 2026-10-16
 
 Second test release: fixes the first tester report, adds account deletion and moves the desktop app to a current, supported Electron.

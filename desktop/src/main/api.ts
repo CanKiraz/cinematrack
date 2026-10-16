@@ -64,3 +64,21 @@ export async function api(path: string, options: { method?: 'GET' | 'POST'; body
     throw new ApiError(code, res.status)
   }
 }
+
+/** A call that needs no sign-in (only /v1/names/check: people pick a name while signing up). Throws on any failure. */
+export async function apiPublic(path: string, body: unknown): Promise<unknown> {
+  const abort = new AbortController()
+  const timer = setTimeout(() => abort.abort(), 8000)
+  try {
+    const res = await net.fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: abort.signal
+    })
+    if (!res.ok) throw new ApiError('upstream_error', res.status)
+    return await res.json()
+  } finally {
+    clearTimeout(timer)
+  }
+}

@@ -234,6 +234,49 @@ describe('Watch Together', () => {
   })
 })
 
+
+describe('display name check', () => {
+  const check = (name: unknown, opts: Parameters<typeof call>[2] = {}) =>
+    call('POST', '/v1/names/check', { body: { name }, token: null, ...opts })
+
+  it('answers without a sign-in, because people choose a name while signing up', async () => {
+    const ok = await check('alex')
+    expect(ok.res.status).toBe(200)
+    expect(ok.body).toEqual({ ok: true })
+  })
+
+  it('says why a name is refused', async () => {
+    expect((await check('Orospu')).body).toEqual({ ok: false, reason: 'blocked' })
+    expect((await check('admin')).body).toEqual({ ok: false, reason: 'reserved' })
+    expect((await check('no spaces')).body).toEqual({ ok: false, reason: 'format' })
+    expect((await check(42)).body).toEqual({ ok: false, reason: 'format' })
+  })
+
+  it('is the only open route', async () => {
+    expect((await call('POST', '/v1/ai/chat', { body: {}, token: null })).res.status).toBe(401)
+    expect((await call('GET', '/v1/names/check', { token: null })).res.status).toBe(405)
+  })
+
+  it('shares one daily allowance, and can be switched off like any feature', async () => {
+    const env = { LIMITS: JSON.stringify({ names: { perUser: 2, global: 2 } }) }
+    await check('one', { env }); await check('two', { env })
+    const third = await check('three', { env })
+    expect(third.res.status).toBe(429)
+    expect((await check('alex', { env: { DISABLED_FEATURES: 'names' } })).res.status).toBe(503)
+  })
+
+  it('keeps a refused name out of AI prompts', async () => {
+    const person = (name: string) => ({ name, random: true, watched: [], watchlist: [{ title: 'Heat' }] })
+    const { fetchMock } = await call('POST', '/v1/ai/together', {
+      body: { kind: 'movie', language: 'en', users: [person('Orospu'), person('sam')] },
+      routes: () => geminiAnswer('{\"recommended_movie\":{\"title\":\"Heat\",\"source\":\"Both Watchlists\"}}')
+    })
+    const prompt = JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body)).contents[0].parts[0].text as string
+    expect(prompt).not.toContain('Orospu')
+    expect(prompt).toContain('<User_DATA>')
+  })
+})
+
 describe('reel identification', () => {
   it('turns a caption into titles', async () => {
     const { res, body } = await call('POST', '/v1/ai/titles', {

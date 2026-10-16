@@ -137,3 +137,37 @@ describe('local data belongs to one account', () => {
     expect(backups().length).toBeLessThanOrEqual(3)
   })
 })
+
+describe('date added', () => {
+  const addTitle = (id: number, title: string) => { db.addToWatchlist(db.upsertMovie(movie(id, title))) }
+  const addedAt = (tmdbId: number) => db.getWatchlist().find(m => m.tmdb_id === tmdbId)?.added_at
+
+  it('converts an ISO time from the cloud to the local format', () => {
+    expect(db.isoToSqlite('2026-10-16T12:00:00.000Z')).toBe('2026-10-16 12:00:00')
+    expect(db.isoToSqlite('2026-10-16T12:00:00Z')).toBe('2026-10-16 12:00:00')
+  })
+
+  it('takes the date a title was added from the cloud, and says whether it changed anything', () => {
+    addTitle(949, 'Heat')
+    expect(db.setWatchlistAddedAt(949, '2024-05-06T07:08:09.000Z')).toBe(true)
+    expect(addedAt(949)).toBe('2024-05-06 07:08:09')
+    expect(db.setWatchlistAddedAt(949, '2024-05-06T07:08:09.000Z')).toBe(false)   // same value: nothing to refresh
+  })
+
+  it('orders the watchlist by the date taken from the cloud', () => {
+    addTitle(1, 'Old'); addTitle(2, 'Newer')
+    db.setWatchlistAddedAt(1, '2020-01-01T00:00:00.000Z')
+    db.setWatchlistAddedAt(2, '2026-01-01T00:00:00.000Z')
+    const byDate = [...db.getWatchlist()].sort((a, b) => b.added_at.localeCompare(a.added_at)).map(m => m.title)
+    expect(byDate).toEqual(['Newer', 'Old'])
+  })
+
+  it('ignores nonsense, and titles it does not have', () => {
+    addTitle(949, 'Heat')
+    const before = addedAt(949)
+    expect(db.setWatchlistAddedAt(949, 'yesterday')).toBe(false)
+    expect(db.setWatchlistAddedAt(949, '')).toBe(false)
+    expect(db.setWatchlistAddedAt(123456, '2024-05-06T07:08:09.000Z')).toBe(false)
+    expect(addedAt(949)).toBe(before)
+  })
+})

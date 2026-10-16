@@ -4,6 +4,7 @@ import { cleanup, consume, loadLimits, type Action, type Limit } from './limits'
 import { buildTmdbUrl } from './tmdb'
 import { generate, UpstreamError } from './gemini'
 import { fetchCaption, shortcode } from './instagram'
+import { checkDisplayName } from './names'
 import {
   chatPrompt, parseTitles, parseTogetherAnswer, titlesPrompt, togetherPrompt,
   type ChatInput, type TogetherInput, type TogetherUser
@@ -55,8 +56,11 @@ function fail(status: number, error: string, message: string, headers: Record<st
 
 const POST_ROUTES = ['ai/chat', 'ai/together', 'ai/titles', 'instagram/caption']
 
-function featureOf(route: string): 'tmdb' | 'ai' | 'instagram' {
-  return route.startsWith('tmdb') ? 'tmdb' : route.startsWith('instagram') ? 'instagram' : 'ai'
+function featureOf(route: string): 'tmdb' | 'ai' | 'instagram' | 'names' {
+  return route.startsWith('tmdb') ? 'tmdb'
+    : route.startsWith('instagram') ? 'instagram'
+    : route.startsWith('names') ? 'names'
+    : 'ai'
 }
 
 export async function handleRequest(request: Request, env: Env, deps: Deps): Promise<Response> {
@@ -73,6 +77,9 @@ export async function handleRequest(request: Request, env: Env, deps: Deps): Pro
   if (disabled.includes(featureOf(route))) return fail(503, 'disabled', 'This feature is switched off for now.')
 
   try {
+    // The one open route: people choose a display name while signing up, before they have an account to sign in with
+    if (route === 'names/check') return await namesCheck(request, env, deps)
+
     const user = await authenticate(request, env.FIREBASE_PROJECT_ID, deps.keys)
     const limits = loadLimits(env.LIMITS)
 
@@ -129,6 +136,19 @@ async function metered(
     await used.release()
     throw e
   }
+}
+
+// ── Display names ─────────────────────────────────────────────────────────────
+
+async function namesCheck(request: Request, env: Env, deps: Deps): Promise<Response> {
+  if (request.method !== 'POST') return fail(405, 'method_not_allowed', 'Use POST.')
+  const body = asObject(await readJson(request, 1_000))
+
+  // No account yet, so everyone shares one allowance (see DEFAULT_LIMITS.names). The apps let a name through when this says no.
+  const used = await consume(env.DB, 'names', 'anonymous', loadLimits(env.LIMITS), deps.now())
+  if (!used.ok) return limited(used.scope, used.retryAfterSeconds)
+
+  return json(checkDisplayName(body['name']))
 }
 
 // ── TMDB ──────────────────────────────────────────────────────────────────────

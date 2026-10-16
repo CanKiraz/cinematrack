@@ -22,12 +22,6 @@
                         android:text="@string/stats_subtitle" android:textSize="13sp"
                         android:textColor="@color/text_secondary"/>
                 </LinearLayout>
-                <androidx.appcompat.widget.AppCompatButton android:id="@+id/btnSignOut"
-                    android:layout_width="wrap_content" android:layout_height="36dp"
-                    android:text="@string/sign_out" android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
-                    android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
-                    android:paddingHorizontal="14dp" android:textAllCaps="false"/>
             </LinearLayout>
 
             <!-- Period selector - reversed: Week Month Year All -->

@@ -209,5 +209,14 @@
         <item>Rating ↓</item>
         <item>Year ↓</item>
         <item>Year ↑</item>
+        <item>Newest added</item>
+        <item>Oldest added</item>
     </string-array>
+    <string name="settings_button_description">Settings</string>
+    <string name="account_change_name">Change display name</string>
+    <string name="account_name_title">Display name</string>
+    <string name="save">Save</string>
+    <string name="name_not_allowed">That display name is not allowed. Please pick another</string>
+    <string name="name_reserved">That display name is reserved. Please pick another</string>
+    <string name="name_updated">Name updated.</string>
 </resources>

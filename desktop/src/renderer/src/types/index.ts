@@ -66,6 +66,8 @@ declare global {
     api: {
       getConfig(key: string): Promise<string | null>
       setConfig(key: string, value: string): Promise<void>
+      checkName(name: string): Promise<{ ok: boolean; reason?: 'format' | 'blocked' | 'reserved' }>
+      setWatchlistAddedAt(tmdbId: number, iso: string, kind?: Kind): Promise<boolean>
       claimLocalData(uid: string): Promise<{ reset: boolean }>
       setAuthToken(token: string | null): Promise<void>
       onAuthRefreshRequest(callback: () => void): () => void

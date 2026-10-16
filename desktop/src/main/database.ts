@@ -238,6 +238,26 @@ export function upsertMovie(movie: Omit<MovieRow, 'id'>, kind?: Kind): number {
 
 // ── Watchlist ─────────────────────────────────────────────────────────────────
 
+/** "2026-10-16T12:00:00.000Z" (what the cloud stores) -> "2026-10-16 12:00:00" (how this database stores times). */
+export function isoToSqlite(iso: string): string {
+  return iso.replace('T', ' ').replace(/(\.\d+)?Z$/, '')
+}
+
+/**
+ * Takes the date a title was added from the cloud, so a title added on the phone shows the time it was really added,
+ * not the moment it reached this computer. Returns true if the stored value changed.
+ */
+export function setWatchlistAddedAt(tmdbId: number, iso: string, kind?: Kind): boolean {
+  const t = T(kind)
+  const when = isoToSqlite(iso)
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(when)) return false
+  const result = db.prepare(
+    `UPDATE ${t.watchlist} SET added_at = ?
+     WHERE movie_id = (SELECT id FROM ${t.movies} WHERE tmdb_id = ?) AND added_at != ?`
+  ).run(when, tmdbId, when)
+  return result.changes > 0
+}
+
 export function addToWatchlist(movieId: number, kind?: Kind): void {
   db.prepare(`INSERT OR IGNORE INTO ${T(kind).watchlist} (movie_id) VALUES (?)`).run(movieId)
 }

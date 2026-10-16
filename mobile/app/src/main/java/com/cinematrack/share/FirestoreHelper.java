@@ -3,6 +3,8 @@ package com.cinematrack.share;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -36,9 +38,26 @@ public class FirestoreHelper {
         return db().collection("watchlists").document(uid).collection(kind.logCollection);
     }
 
+    /**
+     * Adds a title and stamps when it was added (`added_at`, ISO time in UTC, same format as the desktop app).
+     * If the title is already on the list its original date is kept.
+     */
     public static Task<Void> addToWatchlist(String uid, MediaKind kind, Map<String, Object> movie) {
         String tmdbId = String.valueOf(movie.get("tmdb_id"));
-        return watchlistRef(uid, kind).document(tmdbId).set(movie);
+        DocumentReference ref = watchlistRef(uid, kind).document(tmdbId);
+        return ref.get().continueWithTask(task -> {
+            String keep = null;
+            DocumentSnapshot existing = task.isSuccessful() ? task.getResult() : null;
+            if (existing != null && existing.exists()) keep = existing.getString("added_at");
+            movie.put("added_at", keep != null && !keep.isEmpty() ? keep : nowIso());
+            return ref.set(movie);
+        });
+    }
+
+    private static String nowIso() {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        f.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return f.format(new Date());
     }
 
     public static Task<Void> removeFromWatchlist(String uid, MediaKind kind, int tmdbId) {

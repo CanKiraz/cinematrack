@@ -1,7 +1,7 @@
 // Usage limits. Every metered call counts against the caller's own allowance AND a global one, so a single
 // account cannot use up everybody's share of the free API quotas.
 
-export type Action = 'tmdb' | 'chat' | 'together' | 'titles' | 'caption'
+export type Action = 'tmdb' | 'chat' | 'together' | 'titles' | 'caption' | 'names'
 
 export interface Limit {
   perUser: number
@@ -14,7 +14,8 @@ export const DEFAULT_LIMITS: Record<Action, Limit> = {
   chat:     { perUser: 30,   global: 1000,  period: 'day' },    // AI Chat messages
   together: { perUser: 10,   global: 300,   period: 'day' },    // Watch Together picks
   titles:   { perUser: 20,   global: 300,   period: 'day' },    // "what is this reel about?" (Gemini)
-  caption:  { perUser: 3,    global: 80,    period: 'month' }    // RapidAPI: the free plan is 100 requests a month
+  caption:  { perUser: 3,    global: 80,    period: 'month' },   // RapidAPI: the free plan is 100 requests a month
+  names:    { perUser: 3000, global: 3000,  period: 'day' }      // display-name checks: open to people who are signing up, so one shared allowance
 }
 
 /** DEFAULT_LIMITS with the (optional) LIMITS variable merged over it. Bad entries are ignored. */

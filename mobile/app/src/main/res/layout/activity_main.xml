@@ -28,6 +28,12 @@
             android:background="@drawable/btn_secondary" android:stateListAnimator="@null"
             android:paddingHorizontal="14dp" android:minWidth="0dp"
             android:contentDescription="@string/language_button_description"/>
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/btnSettings"
+            android:layout_width="36dp" android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_settings" android:tint="@color/text_secondary"
+            android:background="@drawable/btn_secondary" android:scaleType="center"
+            android:contentDescription="@string/settings_button_description"/>
     </LinearLayout>
 
     <FrameLayout android:id="@+id/fragmentContainer"

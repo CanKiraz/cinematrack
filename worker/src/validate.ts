@@ -1,6 +1,8 @@
 // Request bodies come from the apps, which anyone can imitate, so everything is checked and cleaned here.
 // Free text ends up inside AI prompts: control characters and angle brackets are removed, lengths are capped.
 
+import { isOffensive, isReserved } from './names'
+
 export class BadRequest extends Error {}
 
 export type Kind = 'movie' | 'tv'
@@ -35,10 +37,14 @@ export function parseLang(value: unknown): Lang {
   throw new BadRequest('language must be "tr" or "en"')
 }
 
-/** Display names go into prompts as XML-like tags, so only letters, digits and _ . - survive. */
+/**
+ * Display names go into prompts as XML-like tags, so only letters, digits and _ . - survive.
+ * A name the checker would refuse (or that is reserved) is replaced, so it never reaches a prompt.
+ */
 export function parseName(value: unknown): string {
   const name = typeof value === 'string' ? value.replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 20) : ''
-  return name || 'User'
+  if (!name || isOffensive(name) || isReserved(name)) return 'User'
+  return name
 }
 
 function number(value: unknown, min: number, max: number): number | null {

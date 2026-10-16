@@ -39,8 +39,9 @@
                 android:paddingHorizontal="12dp" android:inputType="text"
                 android:layout_marginEnd="8dp"/>
             <Spinner android:id="@+id/spSort"
-                android:layout_width="110dp" android:layout_height="44dp"
+                android:layout_width="140dp" android:layout_height="44dp"
                 android:background="@drawable/input_bg"
+                android:popupBackground="@color/bg_card"
                 android:paddingHorizontal="8dp"
                 android:spinnerMode="dropdown"/>
         </LinearLayout>
