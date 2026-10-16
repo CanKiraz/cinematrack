@@ -54,7 +54,6 @@ First test release, handed to a small group of testers. Windows installer and An
 - Android: app data is excluded from automatic backups.
 
 ### Known limitations
-- **Fixed in the next release:** on one computer, signing out of a full account and into another carried the first account's lists over to the second. Do not share a computer between accounts with this version.
 - The Windows installer is not code-signed, so Windows shows a "protected your PC" warning. Android is a debug-signed APK to install by hand.
 - Desktop is Windows only for now.
 - The Instagram caption fallback is best effort: its provider allows only 100 requests a month for everyone.
