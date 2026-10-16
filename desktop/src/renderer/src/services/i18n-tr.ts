@@ -21,7 +21,6 @@ export const TR: Record<string, string> = {
 
   // ── App shell ─────────────────────────────────────────────────────────────
   'Syncing your data to the cloud...': 'Verilerin buluta aktarılıyor...',
-  '🎬 {0} movie(s) added from mobile!': '🎬 Telefondan {0} film eklendi!',
   '☁️ {0} movies synced to cloud!': '☁️ {0} film buluta aktarıldı!',
 
   // ── watchlist page ────────────────────────────────────────────────────────
@@ -251,15 +250,4 @@ export const TR: Record<string, string> = {
   'We sent a confirmation link to {0}.': '{0} adresine bir onay bağlantısı gönderdik.',
   'Open it (check the spam folder too), then sign in again with that email. Your lists stay exactly as they are. If nothing arrives, an account with this email may already exist: sign out and sign in with it.': 'Bağlantıyı aç (istenmeyen klasörüne de bak), sonra o e-posta ile tekrar giriş yap. Listelerin olduğu gibi kalır. Hiçbir şey gelmezse bu e-postayla zaten bir hesap açılmış olabilir: çıkış yapıp o hesapla giriş yap.',
   'Did not arrive? Try an email address again': 'Gelmedi mi? E-posta adresini tekrar dene',
-  '👋 Welcome to CinemaTrack': '👋 CinemaTrack\'e hoş geldin',
-  'Enter your free API keys to get started. Both take about 2 minutes to set up.': 'Başlamak için ücretsiz API anahtarlarını gir. İkisi de yaklaşık 2 dakikada alınır.',
-  'Update your API keys below.': 'API anahtarlarını aşağıdan güncelle.',
-  'TMDB API Key': 'TMDB API Anahtarı',
-  'Paste your TMDB API key here': 'TMDB API anahtarını buraya yapıştır',
-  'Google Gemini API Key': 'Google Gemini API Anahtarı',
-  'Paste your Gemini API key here': 'Gemini API anahtarını buraya yapıştır',
-  'Free at': 'Ücretsiz:',
-  '(free tier: 1M tokens/day)': '(ücretsiz kota: günde 1M token)',
-  'Save & Continue': 'Kaydet ve Devam Et',
-  '✓ Saved!': '✓ Kaydedildi!',
 }

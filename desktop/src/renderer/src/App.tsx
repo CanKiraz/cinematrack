@@ -76,10 +76,10 @@ export default function App() {
     </div>
   )
   if (localFor !== user.uid) return <div className={`${shell} flex items-center justify-center text-zinc-500 text-sm`}>…</div>
-  return <MainApp />
+  return <MainApp user={user} />
 }
 
-function MainApp() {
+function MainApp({ user }: { user: User }) {
   const { t } = useI18n()
   const [page, setPage] = useState<Page>('watchlist')
   const [kind, setKindState] = useState<Kind>(initialKind)   // CinemaTrack (movies) or DiziTrack (series)
@@ -270,6 +270,7 @@ function MainApp() {
         {page === 'together'  && (
           <TogetherWithBoundary
             key={kind}
+            user={user}
             kind={kind}
             sessionId={togetherSessionId[kind]}
             setSessionId={id => setTogetherSessionId(prev => ({ ...prev, [kind]: id }))}
