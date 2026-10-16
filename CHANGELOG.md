@@ -5,6 +5,11 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
+Second test release: fixes the first tester report, adds account deletion and moves the desktop app to a current, supported Electron.
+Windows installer and Android APK.
+
 ### Fixed
 - **Signing in with a different account on the same computer no longer carries over the previous account's lists.** The desktop app's local database now remembers which account it belongs to; a different account starts empty (the old file is kept as a backup) and gets its own lists from the cloud. Before, the first sign-in of an account uploaded whatever was stored on the computer, so a new account could end up with someone else's watchlist and statistics. Found by a tester; covered by tests.
 
@@ -18,6 +23,7 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 ### Changed
 - Desktop: removed the Turkish texts of the old API-key dialog and the duplicate sign-in handling in Watch Together (no behaviour change).
 - Desktop: Electron 31 → 44, with electron-builder 26, electron-vite 6 and Vite 8. SQLite now comes from Electron itself (`node:sqlite`) instead of the `better-sqlite3` native module, so a plain `npm install` works without compiler tools and the installer contains no native files. `npm audit --omit=dev` reports no vulnerabilities.
+- Android: build tooling brought up to date (Gradle 8.14, the Google Services plugin 4.5, AppCompat 1.8). No change to what the app does.
 - Dependabot no longer proposes major-version updates for the desktop, Android and Firebase test dependencies.
   Those need a manual migration and a test on a real device, so they are done on purpose, one at a time.
 
@@ -60,5 +66,6 @@ First test release, handed to a small group of testers. Windows installer and An
 - Desktop is Windows only for now.
 - The Instagram caption fallback is best effort: its provider allows only 100 requests a month for everyone.
 
-[Unreleased]: https://github.com/CanKiraz/cinematrack/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CanKiraz/cinematrack/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CanKiraz/cinematrack/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/CanKiraz/cinematrack/releases/tag/v0.1.0
