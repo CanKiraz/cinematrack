@@ -32,7 +32,7 @@ All routes except `/health` and `/v1/names/check` need `Authorization: Bearer <F
 | `POST /v1/ai/together` | `{ kind, language, users: [U, U] }` where `U = { name, random: bool, prompt?, watched: [Item], watchlist: [Item] }` → `{ pick: { title, year, genre, reasoning, source: "both"\|"first"\|"second"\|"gemini" } \| null }`. `first` / `second` follow the order of `users`. |
 | `POST /v1/ai/titles` | `{ caption }` → `{ titles: [string] }` (at most 3) |
 | `POST /v1/instagram/caption` | `{ url }` → `{ caption, cached }` |
-| `POST /v1/names/check` (**no token**) | `{ name }` → `{ ok: true }` or `{ ok: false, reason: "format" | "blocked" | "reserved" }`. Used while signing up and renaming; see `src/names.ts` for what is refused. |
+| `POST /v1/names/check` (**no token**) | `{ name }` → `{ ok: true }` or `{ ok: false, reason: "format", "blocked" or "reserved" }`. Used while signing up and renaming; see `src/names.ts` for what is refused. |
 
 Calls that count against a limit (everything except `/health`, and an Instagram caption served from the cache) answer with an
 `X-RateLimit-Remaining` header: how many more calls of that kind the person has in the current period (day or month).
