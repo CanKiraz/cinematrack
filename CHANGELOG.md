@@ -5,12 +5,17 @@ and the project uses [Semantic Versioning](https://semver.org/) (while it is `0.
 
 ## [Unreleased]
 
+### Fixed
+- **Signing in with a different account on the same computer no longer carries over the previous account's lists.** The desktop app's local database now remembers which account it belongs to; a different account starts empty (the old file is kept as a backup) and gets its own lists from the cloud. Before, the first sign-in of an account uploaded whatever was stored on the computer, so a new account could end up with someone else's watchlist and statistics. Found by a tester; covered by tests.
+
 ### Added
+- Unit tests for the desktop database layer (Vitest), run in CI.
 - **Delete account.** Desktop: Settings → *Delete account…*. Android: Stats → sign-out menu → *Delete account*.
   After asking for the password again, it removes the account and everything stored online: lists, ratings, notes
   and Watch Together sessions. Data saved on the device itself is left alone. The security rules have a test for the exact deletion sequence.
 
 ### Changed
+- Desktop: Electron 31 → 44, with electron-builder 26, electron-vite 6 and Vite 8. SQLite now comes from Electron itself (`node:sqlite`) instead of the `better-sqlite3` native module, so a plain `npm install` works without compiler tools and the installer contains no native files. `npm audit --omit=dev` reports no vulnerabilities.
 - Dependabot no longer proposes major-version updates for the desktop, Android and Firebase test dependencies.
   Those need a manual migration and a test on a real device, so they are done on purpose, one at a time.
 

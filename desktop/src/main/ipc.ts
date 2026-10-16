@@ -4,7 +4,7 @@ import {
   addWatchLog, getWatchLog, getWatchLogByDate, getStats,
   getConfig, setConfig, isInWatchlist, getDetailedStats,
   isWatched, removeWatchLogEntry, addRemoteWatchLog, removeWatchLogByRemoteId,
-  Kind
+  claimLocalDataFor, Kind
 } from './database'
 import { api, setAuthToken } from './api'
 
@@ -83,6 +83,12 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:get', (_e, key: string) => getConfig(key))
   ipcMain.handle('config:set', (_e, key: string, value: string) => setConfig(key, value))
+
+  // Local data belongs to one account: a different account gets a fresh database (see claimLocalDataFor)
+  ipcMain.handle('account:claimLocalData', (_e, uid: string) => {
+    if (typeof uid !== 'string' || !uid) throw new Error('uid is required')
+    return claimLocalDataFor(uid)
+  })
 
   // The signed-in user's Firebase ID token, which the renderer pushes here for the CinemaTrack API calls
   ipcMain.handle('auth:setToken', (_e, token: string | null) => setAuthToken(typeof token === 'string' ? token : null))
