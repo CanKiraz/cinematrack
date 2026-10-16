@@ -7,6 +7,8 @@ Part of the [CinemaTrack monorepo](..); the API it talks to lives in [`../worker
 
 - Watchlist (sort by title, rating, year or date added), watched history with ratings and notes, statistics, AI chat and Watch Together.
 - **Share from Instagram:** share a reel to CinemaTrack and it finds the movie or series from the caption (`ShareActivity`).
+- **Where to watch:** a title's page lists the streaming services that have it (`Providers`, `Tmdb.providersTR`). It reads only TMDB's
+  Turkish listings, so for now it is **Turkey only**; other countries are tracked in [#43](../../../issues/43).
 - A settings gear in the top bar: change your display name, sign out, delete your account.
 - English and Turkish (`res/values/strings.xml`, `res/values-tr/strings.xml`).
 
