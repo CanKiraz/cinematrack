@@ -15,8 +15,36 @@ API that keeps every third-party key out of the apps. It has two modes in one: *
 - **AI chat.** Gemini knows your list and your history, so "something short and funny for tonight" gets an answer that fits *you*.
 - **Watch Together.** Two people join a session with a 6-letter code, each says what they feel like (or "surprise me"), and the AI picks something both will enjoy, drawing on both lists.
 - **Share from Instagram (Android).** Share a reel to CinemaTrack and it finds the movie or series from the caption.
+- **Where to watch (Android, Turkey only for now).** A title's page lists the streaming services that have it and opens the ones installed on your phone.
+  This uses TMDB's Turkish listings only, so for now it shows **Turkey** and nothing else. Other countries can be added once the app has
+  users there: see [#43](../../issues/43).
 - **Same list everywhere.** Add a title on the PC and it appears on the phone in seconds. English and Turkish throughout.
 - **Your data is yours.** Lists and notes are private to your account, you can rename yourself, and you can **delete your account** and everything stored online from inside both apps.
+
+## Screenshots
+
+**Desktop (Windows)**
+
+<p>
+  <img src="docs/images/desktop-watchlist.webp" alt="The watchlist on the desktop, sorted by date added" width="49%">
+  <img src="docs/images/desktop-search.webp" alt="Searching for a movie to add" width="49%">
+</p>
+<p>
+  <img src="docs/images/desktop-stats.png" alt="Statistics: totals, average rating, top genre and watching activity" width="49%">
+  <img src="docs/images/desktop-ai-chat.png" alt="AI chat recommending a movie from the user's own watchlist" width="49%">
+</p>
+<p>
+  <img src="docs/images/desktop-series.png" alt="DiziTrack, the series mode, with its own purple accent" width="49%">
+</p>
+
+**Android**
+
+<p>
+  <img src="docs/images/phone-watchlist.jpg" alt="The watchlist on the phone, with the language button and the settings gear" width="24%">
+  <img src="docs/images/phone-stats.jpg" alt="Statistics and watch history on the phone" width="24%">
+  <img src="docs/images/phone-search.jpg" alt="Searching for a movie on the phone" width="24%">
+  <img src="docs/images/phone-where-to-watch.jpg" alt="A movie's page with where to watch it in Turkey" width="24%">
+</p>
 
 ## How it works
 
@@ -54,6 +82,8 @@ A few decisions worth knowing:
   clean database (the old file is kept as a backup) instead of mixing lists.
 - **Honest about limits.** The display-name filter is a courtesy filter, not a security boundary; the AI and Instagram features have daily
   limits (the Instagram lookup uses a 100-requests-a-month plan and caches captions to stay inside it).
+- **Where to watch is Turkey-only for now.** The first testers are in Turkey, so the "available in" section reads only TMDB's Turkish listings.
+  Per-country support (the country taken from the phone's region, with an override) is planned for when there are users elsewhere: [#43](../../issues/43), a good first issue.
 
 ## Try it
 
