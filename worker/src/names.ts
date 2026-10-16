@@ -11,16 +11,21 @@ const FORMAT = /^[\p{L}\p{N}_.-]{2,20}$/u
 const ANYWHERE = [
   // English
   'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'nigger', 'nigga', 'faggot', 'whore', 'pussy', 'rapist', 'hitler', 'pedophile',
+  'dumbass', 'jackass', 'retard', 'tranny', 'wanker', 'porno', 'pornhub', 'xvideo', 'motherfuck', 'cocksuck', 'dickhead', 'terrorist',
   // Turkish
-  'orospu', 'oruspu', 'yarrak', 'yarak', 'amcik', 'aminakoy', 'amnakoy', 'aminakod', 'siktir', 'sikeyim', 'sikerim', 'sikik', 'siktim',
-  'pezevenk', 'gavat', 'kahpe', 'yavsak', 'surtuk', 'fahise', 'gotveren', 'gotlek', 'tecavuz', 'pedofil'
+  'orospu', 'oruspu', 'orosbu', 'yarrak', 'yarak', 'yarram', 'amcik', 'aminakoy', 'amnakoy', 'aminakod', 'aminoglu', 'siktir', 'sikeyim', 'sikerim',
+  'sikik', 'siktim', 'sikis', 'sikici', 'sikec', 'sikim', 'sikti', 'pezevenk', 'gavat', 'kahpe', 'yavsak', 'surtuk', 'fahise', 'gotveren',
+  'gotlek', 'gotun', 'tecavuz', 'pedofil', 'kaltak', 'kancik', 'dassak', 'sicayim', 'sicarim', 'boktan', 'bokum', 'ananisik', 'anasini',
+  'serefsiz', 'haysiyetsiz', 'dangalak', 'gerizekali', 'ibnelik', 'ibneler'
 ]
 
 // Matched only as a whole name or a whole part of it (split by . _ -, digits at the edges ignored). These short or
 // common stems would catch innocent names otherwise (Scunthorpe, Dickens, Slutsky, Nazife, Hancock, Grape...).
 const WHOLE_WORD = [
-  'cunt', 'dick', 'cock', 'slut', 'ass', 'rape', 'nazi', 'kkk',
-  'amk', 'aq', 'sik', 'bok', 'got', 'ibne', 'pust', 'tasak'
+  'cunt', 'dick', 'cock', 'slut', 'ass', 'rape', 'nazi', 'kkk', 'fag', 'twat', 'prick', 'cum', 'tits', 'anus', 'penis', 'vagina', 'dildo',
+  'sex', 'sexy', 'porn', 'pedo', 'chink', 'spic', 'kike', 'coon', 'idiot', 'moron', 'imbecile',
+  'amk', 'amq', 'aq', 'sik', 'skm', 'skrm', 'sktr', 'bok', 'got', 'ibne', 'pust', 'tasak', 'pic', 'seks', 'salak', 'aptal',
+  'sapik', 'ezik', 'kevase'
 ]
 
 // Names that could pass for the people who run the service.
