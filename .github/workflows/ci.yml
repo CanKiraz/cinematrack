@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   desktop:
-    name: Desktop (typecheck + build)
+    name: Desktop (typecheck, tests, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,10 +26,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      # --ignore-scripts: no need to download Electron or compile better-sqlite3 just to typecheck and bundle
+      # --ignore-scripts: no need to download the Electron binary just to typecheck, test and bundle
       - run: npm ci --ignore-scripts
       - run: npx tsc --noEmit -p tsconfig.web.json
       - run: npx tsc --noEmit -p tsconfig.node.json
+      - run: npm test
       - run: npx electron-vite build
 
   worker:

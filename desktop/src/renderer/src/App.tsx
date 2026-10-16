@@ -35,6 +35,20 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [, rerender] = useState(0)
+  // The account the local database has been assigned to. Nothing may read or sync local data before it matches the
+  // signed-in user, otherwise one account's list could end up in another's (see claimLocalDataFor in the main process).
+  const [localFor, setLocalFor] = useState<string | null>(null)
+  const [localFailed, setLocalFailed] = useState(false)
+
+  useEffect(() => {
+    const uid = user?.emailVerified ? user.uid : null
+    if (!uid) { setLocalFor(null); setLocalFailed(false); return }
+    let cancelled = false
+    window.api.claimLocalData(uid)
+      .then(() => { if (!cancelled) { setLocalFailed(false); setLocalFor(uid) } })
+      .catch(e => { console.error('claiming local data failed:', e); if (!cancelled) setLocalFailed(true) })
+    return () => { cancelled = true }
+  }, [user?.uid, user?.emailVerified])
 
   useEffect(() => {
     const stop = onIdTokenChanged(auth, async u => {
@@ -55,6 +69,13 @@ export default function App() {
   if (!loaded) return <div className={`${shell} flex items-center justify-center text-zinc-500 text-sm`}>…</div>
   if (!user) return <div className={shell}><AuthModal onSuccess={() => {}} /></div>
   if (!user.emailVerified) return <div className={shell}><VerifyEmail user={user} onVerified={() => rerender(n => n + 1)} /></div>
+  if (localFailed) return (
+    <div className={`${shell} flex flex-col items-center justify-center gap-3 px-6 text-center`}>
+      <p className="text-sm text-red-300">Could not prepare the data stored on this computer.</p>
+      <button onClick={() => { void auth.signOut() }} className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">Sign out</button>
+    </div>
+  )
+  if (localFor !== user.uid) return <div className={`${shell} flex items-center justify-center text-zinc-500 text-sm`}>…</div>
   return <MainApp />
 }
 

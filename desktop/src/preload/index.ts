@@ -4,6 +4,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 const api = {
   getConfig: (key: string): Promise<string | null> => ipcRenderer.invoke('config:get', key),
   setConfig: (key: string, value: string): Promise<void> => ipcRenderer.invoke('config:set', key, value),
+  // Tells the main process which account is signed in; a different account than last time gets an empty local database
+  claimLocalData: (uid: string): Promise<{ reset: boolean }> => ipcRenderer.invoke('account:claimLocalData', uid),
   // Firebase ID token for the CinemaTrack API (null when signed out), and the main process asking for a fresh one
   setAuthToken: (token: string | null): Promise<void> => ipcRenderer.invoke('auth:setToken', token),
   onAuthRefreshRequest: (callback: () => void): (() => void) => {

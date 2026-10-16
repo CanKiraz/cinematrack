@@ -1,5 +1,6 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { app } from 'electron'
+import fs from 'node:fs'
 import path from 'path'
 
 const userDataPath = app.getPath('userData')
@@ -22,6 +23,10 @@ class Db {
 
   pragma(setting: string): void {
     this.raw.exec(`PRAGMA ${setting}`)
+  }
+
+  close(): void {
+    this.raw.close()
   }
 
   prepare(sql: string) {
@@ -135,6 +140,11 @@ export function initDatabase(): void {
   createTables('tv')
 }
 
+/** Closes the database file (tests need this to delete their temporary folder on Windows). */
+export function closeDatabase(): void {
+  db?.close()
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 export function getConfig(key: string): string | null {
@@ -144,6 +154,49 @@ export function getConfig(key: string): string | null {
 
 export function setConfig(key: string, value: string): void {
   db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(key, value)
+}
+
+// ── Whose data is this? ───────────────────────────────────────────────────────
+// The local database lives on the computer, but what is in it belongs to ONE account. Without that rule, signing out of
+// one account and into another on the same computer would upload the first person's whole list to the second's cloud
+// (the first sign-in of an account pushes whatever is stored locally).
+
+const BACKUPS_KEPT = 3
+
+/**
+ * Call once the signed-in account is known, before anything reads or syncs the local data.
+ * - First account to use this database (including data from before accounts existed): it claims it, nothing changes.
+ * - Same account as last time: nothing changes.
+ * - A different account: the old database is set aside as a backup file and this account starts empty; its own
+ *   lists come back from the cloud. `reset` tells the caller that happened.
+ */
+export function claimLocalDataFor(uid: string): { reset: boolean } {
+  const owner = getConfig('owner_uid')
+  if (owner === uid) return { reset: false }
+  if (owner === null) {
+    setConfig('owner_uid', uid)
+    return { reset: false }
+  }
+
+  db.close()
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  for (const suffix of ['', '-wal', '-shm']) {
+    const from = dbPath + suffix
+    if (fs.existsSync(from)) fs.renameSync(from, `${dbPath}.${stamp}.bak${suffix}`)
+  }
+  pruneBackups()
+  initDatabase()
+  setConfig('owner_uid', uid)
+  return { reset: true }
+}
+
+/** Keeps the newest few backups of other accounts' local data, deletes the rest. */
+function pruneBackups(): void {
+  const prefix = path.basename(dbPath) + '.'
+  const names = fs.readdirSync(userDataPath).filter(n => n.startsWith(prefix) && n.endsWith('.bak')).sort().reverse()
+  for (const old of names.slice(BACKUPS_KEPT)) {
+    for (const suffix of ['', '-wal', '-shm']) fs.rmSync(path.join(userDataPath, old + suffix), { force: true })
+  }
 }
 
 // ── Movies / series ───────────────────────────────────────────────────────────
