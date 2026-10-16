@@ -10,7 +10,7 @@ export function shortcode(url: string): string | null {
 }
 
 export type CaptionResult =
-  | { status: 'ok'; caption: string; cached: boolean }
+  | { status: 'ok'; caption: string; cached: boolean; remaining?: number }   // remaining: only when RapidAPI was asked
   | { status: 'limited'; retryAfterSeconds: number }
 
 /**
@@ -39,7 +39,7 @@ export async function fetchCaption(
       await env.DB.prepare(`INSERT OR REPLACE INTO caption_cache (code, caption, created_at) VALUES (?, ?, ?)`)
         .bind(code, caption, Math.floor(deps.now().getTime() / 1000)).run()
     }
-    return { status: 'ok', caption, cached: false }
+    return { status: 'ok', caption, cached: false, remaining: used.remaining }
   } catch (e) {
     await used.release()   // the request failed: do not charge anyone for it
     throw e

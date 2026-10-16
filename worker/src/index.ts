@@ -102,6 +102,13 @@ export async function handleRequest(request: Request, env: Env, deps: Deps): Pro
   }
 }
 
+/** Tells the caller how many calls of this kind they have left in the current period (so an app can show "7 left today"). */
+function withRemaining(res: Response, remaining: number): Response {
+  const headers = new Headers(res.headers)
+  headers.set('X-RateLimit-Remaining', String(remaining))
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+}
+
 /** The answer for a call that is over its limit. */
 function limited(scope: 'user' | 'global', retryAfterSeconds: number): Response {
   const headers = { 'Retry-After': String(retryAfterSeconds) }
@@ -117,7 +124,7 @@ async function metered(
   const used = await consume(env.DB, action, user.uid, limits, deps.now())
   if (!used.ok) return limited(used.scope, used.retryAfterSeconds)
   try {
-    return await work()
+    return withRemaining(await work(), used.remaining)
   } catch (e) {
     await used.release()
     throw e
@@ -236,5 +243,6 @@ async function instagramCaption(request: Request, env: Env, deps: Deps, user: Au
     return fail(429, 'quota_exhausted', 'The Instagram lookups for this month are used up.',
       { 'Retry-After': String(result.retryAfterSeconds) })
   }
-  return json({ caption: result.caption, cached: result.cached })
+  return json({ caption: result.caption, cached: result.cached }, 200,
+    result.remaining === undefined ? {} : { 'X-RateLimit-Remaining': String(result.remaining) })
 }
