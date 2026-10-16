@@ -211,6 +211,17 @@ public class LoginActivity extends AppCompatActivity {
         if (password.length() < MIN_PASSWORD) { showError(getString(R.string.login_weak_password, MIN_PASSWORD)); return; }
 
         busy(true);
+        // The name is checked before the account exists, so a refused name leaves nothing behind
+        java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+            NameCheck.Verdict verdict = NameCheck.check(name);
+            runOnUiThread(() -> {
+                if (verdict != NameCheck.Verdict.OK) { busy(false); showError(getString(NameCheck.message(verdict))); return; }
+                createAccount(email, password, name);
+            });
+        });
+    }
+
+    private void createAccount(String email, String password, String name) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener(r -> {
                 FirebaseUser user = r.getUser();

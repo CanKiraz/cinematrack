@@ -209,5 +209,14 @@
         <item>Puan ↓</item>
         <item>Yıl ↓</item>
         <item>Yıl ↑</item>
+        <item>En yeni eklenen</item>
+        <item>En eski eklenen</item>
     </string-array>
+    <string name="settings_button_description">Ayarlar</string>
+    <string name="account_change_name">Görünen adı değiştir</string>
+    <string name="account_name_title">Görünen ad</string>
+    <string name="save">Kaydet</string>
+    <string name="name_not_allowed">Bu görünen ad kullanılamaz. Lütfen başka bir ad seç</string>
+    <string name="name_reserved">Bu görünen ad ayrılmış. Lütfen başka bir ad seç</string>
+    <string name="name_updated">Ad güncellendi.</string>
 </resources>

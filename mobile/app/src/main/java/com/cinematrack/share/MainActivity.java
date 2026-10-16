@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         btnModeTv.setOnClickListener(v -> setMode(MediaKind.TV));
         btnLang.setText(Lang.isTurkish() ? "EN" : "TR");      // shows the language you will switch to
         btnLang.setOnClickListener(v -> Lang.toggle());       // the system recreates the activity in the new language
+        findViewById(R.id.btnSettings).setOnClickListener(v -> AccountDialog.show(this));
 
         nav.setSelectedItemId(idForTab(tab));
         applyModeStyle();

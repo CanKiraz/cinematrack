@@ -67,12 +67,12 @@ public class WatchlistFragment extends Fragment implements MovieDetailSheet.OnAc
 
         // Sort spinner
         ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(requireContext(),
-            android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.sort_options));
-        sortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            R.layout.spinner_item, getResources().getStringArray(R.array.sort_options));
+        sortAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
         spSort.setAdapter(sortAdapter);
         spSort.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
-                sortMode = new String[]{"title", "rating", "year_desc", "year_asc"}[pos];
+                sortMode = new String[]{"title", "rating", "year_desc", "year_asc", "added_desc", "added_asc"}[pos];
                 filterMovies(etFilter.getText().toString());
             }
             public void onNothingSelected(AdapterView<?> p) {}
@@ -126,6 +126,14 @@ public class WatchlistFragment extends Fragment implements MovieDetailSheet.OnAc
         });
     }
 
+    /** Orders by date added (ISO text sorts by time). Titles with no date, i.e. added before it was kept, go last either way. */
+    private static int compareAdded(Map<String, Object> a, Map<String, Object> b, boolean newestFirst) {
+        String da = String.valueOf(a.getOrDefault("added_at", "")), db = String.valueOf(b.getOrDefault("added_at", ""));
+        boolean ha = !da.isEmpty() && !da.equals("null"), hb = !db.isEmpty() && !db.equals("null");
+        if (ha != hb) return ha ? -1 : 1;
+        return newestFirst ? db.compareTo(da) : da.compareTo(db);
+    }
+
     private void filterMovies(String q) {
         final boolean tr = Lang.isTurkish();
         final String needle = q.toLowerCase(Locale.getDefault());
@@ -147,6 +155,12 @@ public class WatchlistFragment extends Fragment implements MovieDetailSheet.OnAc
             case "year_desc":
                 filtered.sort((a, b) -> String.valueOf(b.getOrDefault("release_date", ""))
                     .compareTo(String.valueOf(a.getOrDefault("release_date", ""))));
+                break;
+            case "added_desc":
+                filtered.sort((a, b) -> compareAdded(a, b, true));
+                break;
+            case "added_asc":
+                filtered.sort((a, b) -> compareAdded(a, b, false));
                 break;
             case "year_asc":
                 filtered.sort((a, b) -> String.valueOf(a.getOrDefault("release_date", ""))
