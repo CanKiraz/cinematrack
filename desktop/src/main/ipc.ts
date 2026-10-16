@@ -4,9 +4,9 @@ import {
   addWatchLog, getWatchLog, getWatchLogByDate, getStats,
   getConfig, setConfig, isInWatchlist, getDetailedStats,
   isWatched, removeWatchLogEntry, addRemoteWatchLog, removeWatchLogByRemoteId,
-  claimLocalDataFor, Kind
+  claimLocalDataFor, setWatchlistAddedAt, Kind
 } from './database'
-import { api, setAuthToken } from './api'
+import { api, apiPublic, setAuthToken } from './api'
 
 // ── TMDB ──────────────────────────────────────────────────────────────────────
 // CinemaTrack = movies ('movie'), DiziTrack = TV series ('tv'). The two differ only in a few field names.
@@ -90,6 +90,16 @@ export function registerIpcHandlers(): void {
     return claimLocalDataFor(uid)
   })
 
+  // Is this display name acceptable? Answered by the CinemaTrack API (so the list can change without a new app).
+  // If the API cannot be reached the name is let through: a check outage must not stop anybody from signing up.
+  ipcMain.handle('names:check', async (_e, name: string) => {
+    try {
+      return await apiPublic('/v1/names/check', { name })
+    } catch {
+      return { ok: true }
+    }
+  })
+
   // The signed-in user's Firebase ID token, which the renderer pushes here for the CinemaTrack API calls
   ipcMain.handle('auth:setToken', (_e, token: string | null) => setAuthToken(typeof token === 'string' ? token : null))
 
@@ -130,6 +140,8 @@ export function registerIpcHandlers(): void {
   })))
 
   ipcMain.handle('watchlist:check', (_e, tmdbId: number, kind?: string) => isInWatchlist(tmdbId, kindOf(kind)))
+  ipcMain.handle('watchlist:setAddedAt', (_e, tmdbId: number, iso: string, kind?: string) =>
+    typeof iso === 'string' ? setWatchlistAddedAt(tmdbId, iso, kindOf(kind)) : false)
 
   // Watch log
   ipcMain.handle('watchlog:isWatched', (_e, tmdbId: number, kind?: string) => isWatched(tmdbId, kindOf(kind)))

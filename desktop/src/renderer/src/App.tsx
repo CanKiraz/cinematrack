@@ -14,6 +14,7 @@ import { Page, ChatMessage, Movie, Kind } from './types'
 import { TogetherSession, cleanupStaleSessions } from './services/together'
 import { notifyDataChanged } from './services/events'
 import { backfillTurkish } from './services/localization'
+import { backfillAddedAt } from './services/addedAt'
 import { useI18n } from './services/i18n'
 import {
   syncAddMovie, syncAddWatchLog, isMigrated, markMigrated, collectionNames
@@ -192,6 +193,9 @@ function MainApp({ user }: { user: User }) {
                   await window.api.addToWatchlist(movie, k).catch(() => {})
                   if (change.type === 'modified' || movie.title_tr != null) changed = true
                 }
+                // When it was really added (a title added on the phone would otherwise be stamped with its arrival here)
+                const cloudAddedAt = (change.doc.data() as { added_at?: string }).added_at
+                if (cloudAddedAt && await window.api.setWatchlistAddedAt(movie.tmdb_id, cloudAddedAt, k).catch(() => false)) changed = true
               }
               if (change.type === 'removed') {
                 const movie = change.doc.data()
@@ -245,6 +249,8 @@ function MainApp({ user }: { user: User }) {
 
       // Entries saved before the Turkish copy existed: fill it in once, quietly
       backfillTurkish(user.uid)
+      // Older titles have no added_at in the cloud yet: this computer knows it, so it fills the gaps once
+      void backfillAddedAt(user.uid)
     })
 
     return () => {

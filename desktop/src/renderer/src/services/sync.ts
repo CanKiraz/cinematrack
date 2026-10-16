@@ -1,6 +1,7 @@
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Kind, Movie } from '../types'
+import { addedAtFor } from './dates'
 
 // CinemaTrack (movies) lives in watchlists/{uid}/movies + watchlog,
 // DiziTrack (series) in watchlists/{uid}/shows + showlog — the same shape, different collections.
@@ -20,7 +21,9 @@ export async function syncAddMovie(uid: string, movie: Movie, kind: Kind = 'movi
     release_date: movie.release_date,
     genres: movie.genres,
     vote_average: movie.vote_average,
-    runtime: movie.runtime ?? null
+    runtime: movie.runtime ?? null,
+    // When it was added: the local time if this title is already on the list here, otherwise now. The phone sorts by it.
+    added_at: addedAtFor(movie as { added_at?: string | null })
   }
   // The Turkish copy, once known (null = not looked up yet). tr_checked tells the phone not to look it up again.
   if (movie.title_tr != null) {
